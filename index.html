@@ -76,9 +76,6 @@
         .tool-button:hover { background-color: var(--tool-btn-hover-bg-dark); }
         .theme-light .tool-button:hover { background-color: var(--tool-btn-hover-bg-light); }
         .tool-button.active { background-color: #3b82f6; color: white; }
-
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        .spinner { animation: spin 1s linear infinite; }
     </style>
 </head>
 <body class="p-4 sm:p-6 lg:p-8">
@@ -128,23 +125,76 @@
         </div>
     </div>
     
-    <!-- Gemini Modal -->
-    <div id="gemini-modal" class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center p-4 z-50">
-        <div id="gemini-modal-content" class="card rounded-xl p-6 w-full max-w-2xl max-h-[90vh] flex flex-col">
-            <div class="flex justify-between items-center mb-4"><h3 id="gemini-modal-title" class="text-xl font-bold"></h3><button id="gemini-modal-close" class="p-2 rounded-full hover:bg-slate-500/20">&times;</button></div>
-            <div id="gemini-modal-body" class="overflow-y-auto space-y-4 prose prose-invert"><div id="gemini-spinner" class="flex justify-center items-center py-10"><svg class="spinner h-8 w-8 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></div><div id="gemini-response" class="hidden"></div></div>
+    <!-- Guidance Modal -->
+    <div id="guidance-modal" class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center p-4 z-50">
+        <div id="guidance-modal-content" class="card rounded-xl p-6 w-full max-w-2xl max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center mb-4"><h3 id="guidance-modal-title" class="text-xl font-bold"></h3><button id="guidance-modal-close" class="p-2 rounded-full hover:bg-slate-500/20">&times;</button></div>
+            <div id="guidance-modal-body" class="overflow-y-auto space-y-4 prose prose-invert"></div>
         </div>
     </div>
 
 <script>
-window.onload = () => { // FIX: Use window.onload to ensure Chart.js is loaded
-    const APP_STORAGE_KEY = 'iso27001-assessment-data-v6';
+window.onload = () => { // Use window.onload to ensure Chart.js is loaded
+    const APP_STORAGE_KEY = 'iso27001-assessment-data-v7';
     const THEME_STORAGE_KEY = 'iso27001-theme';
-    let currentTheme = 'dark';
+    let currentTheme = 'light'; 
     let isFilterActive = false;
-
-    // ... (pageInfo and defaultAssessmentData remain the same) ...
+    
     const pageInfo = { dashboard: { title: 'داشبورد تحلیل شکاف ISO 27001', description: 'نمای کلی از وضعیت انطباق و پیشرفت ارزیابی', icon: `<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>` }, mandatory: { title: 'الزامات استاندارد (بندهای ۴ تا ۱۰)', description: 'این بخش شامل بندهای الزامی استاندارد است که چارچوب اصلی سیستم مدیریت امنیت اطلاعات (ISMS) را تشکیل می‌دهند.', icon: `<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>` }, annexA5: { title: 'کنترل‌های سازمانی (پیوست A.5)', description: 'این کنترل‌ها به خط‌مشی‌ها، فرآیندها و ساختارهای سازمانی برای مدیریت امنیت اطلاعات می‌پردازند.', icon: `<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>` }, annexA6: { title: 'کنترل‌های فردی (پیوست A.6)', description: 'این کنترل‌ها بر جنبه‌های انسانی امنیت اطلاعات، از جمله فرآیندهای قبل، حین و بعد از استخدام تمرکز دارند.', icon: `<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>` }, annexA7: { title: 'کنترل‌های فیزیکی (پیوست A.7)', description: 'این کنترل‌ها به حفاظت فیزیکی از دارایی‌های اطلاعاتی سازمان در برابر دسترسی غیرمجاز، آسیب و تداخل می‌پردازند.', icon: `<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>` }, annexA8: { title: 'کنترل‌های فناوری (پیوست A.8)', description: 'این کنترل‌ها به حفاظت از اطلاعات در شبکه‌ها و سیستم‌ها، از جمله مدیریت آسیب‌پذیری، رمزنگاری و امنیت توسعه نرم‌افزار مربوط می‌شوند.', icon: `<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" /></svg>` }, };
+    
+    // --- FULL GUIDANCE DATA ---
+    const controlGuidance = {
+        '4.1': { description: "سازمان باید مسائل داخلی و خارجی مرتبط با اهداف خود را که بر توانایی‌اش برای دستیابی به نتایج مورد انتظار از سیستم مدیریت امنیت اطلاعات (ISMS) تأثیر می‌گذارد، شناسایی کند.", implementation: "۱. تحلیل عوامل داخلی (نقاط قوت و ضعف) مانند فرهنگ سازمانی، فرآیندها و منابع. ۲. تحلیل عوامل خارجی (فرصت‌ها و تهدیدها) مانند محیط قانونی، فناوری، رقابتی و بازار. ۳. استفاده از ابزارهایی مانند تحلیل SWOT یا PESTEL. ۴. مستندسازی این عوامل و بازنگری دوره‌ای آن‌ها.", evidence: "سند تحلیل بافتار سازمان، گزارش تحلیل SWOT، صورت‌جلسات مدیریتی مربوط به بررسی عوامل داخلی و خارجی." },
+        '4.2': { description: "سازمان باید طرف‌های ذی‌نفع مرتبط با ISMS و الزامات آن‌ها را شناسایی کند.", implementation: "۱. تهیه لیستی از تمام طرف‌های ذی‌نفع داخلی و خارجی (مانند کارکنان، مشتریان، تأمین‌کنندگان، نهادهای قانون‌گذار). ۲. شناسایی و مستندسازی نیازها و انتظارات امنیتی هر گروه. ۳. تعیین اینکه کدام الزامات باید از طریق ISMS برآورده شوند.", evidence: "لیست طرف‌های ذی‌نفع و الزامات آن‌ها، ماتریس ذی‌نفعان، مستندات قراردادی و قانونی." },
+        '4.3': { description: "سازمان باید مرزها و قابلیت اعمال ISMS را برای تعیین دامنه آن مشخص کند.", implementation: "۱. در نظر گرفتن مسائل شناسایی‌شده در بند ۴.۱ و ۴.۲. ۲. تعریف واضح مرزهای فیزیکی، منطقی و سازمانی دامنه (مثلاً کدام واحدها، مکان‌ها و سیستم‌ها تحت پوشش هستند). ۳. مستندسازی دامنه.", evidence: "سند بیانیه دامنه (Scope Statement) مصوب." },
+        '4.4': { description: "سازمان باید یک سیستم مدیریت امنیت اطلاعات را مطابق با الزامات استاندارد ISO 27001 ایجاد، پیاده‌سازی، نگهداری و به طور مداوم بهبود دهد.", implementation: "۱. تخصیص منابع لازم. ۲. ایجاد فرآیندهای مورد نیاز استاندارد (مانند مدیریت ریسک، ممیزی داخلی، بازنگری مدیریت). ۳. یکپارچه‌سازی فرآیندهای ISMS با فرآیندهای کسب‌وکار سازمان.", evidence: "تمام مستندات ISMS، از جمله خط‌مشی‌ها، رویه‌ها، سوابق و گزارش‌های خروجی فرآیندها." },
+        '5.1': { description: "مدیریت ارشد باید تعهد و رهبری خود را نسبت به ISMS از طریق مشارکت فعال و حمایت نشان دهد.", implementation: "۱. اطمینان از همسویی خط‌مشی و اهداف امنیت اطلاعات با استراتژی سازمان. ۲. تأمین منابع مورد نیاز ISMS. ۳. اطلاع‌رسانی اهمیت امنیت اطلاعات. ۴. حمایت از سایر مدیران برای ایفای نقش رهبری خود.", evidence: "صورت‌جلسات بازنگری مدیریت، شواهد تخصیص بودجه و منابع، پیام‌ها و ابلاغیه‌های مدیریت ارشد." },
+        '5.2': { description: "مدیریت ارشد باید یک خط‌مشی امنیت اطلاعات ایجاد کند که با اهداف سازمان سازگار باشد.", implementation: "۱. تدوین سند خط‌مشی امنیت اطلاعات. ۲. اطمینان از اینکه خط‌مشی شامل تعهد به برآورده ساختن الزامات و بهبود مداوم است. ۳. در دسترس قرار دادن خط‌مشی برای طرف‌های ذی‌نفع.", evidence: "سند خط‌مشی امنیت اطلاعات مصوب و ابلاغ‌شده." },
+        '5.3': { description: "مدیریت ارشد باید اطمینان حاصل کند که مسئولیت‌ها و اختیارات برای نقش‌های مرتبط با امنیت اطلاعات تخصیص داده شده و اطلاع‌رسانی می‌شود.", implementation: "۱. تعریف نقش‌های امنیتی کلیدی در سازمان. ۲. مستندسازی و ابلاغ مسئولیت‌ها و اختیارات هر نقش (مثلاً در شرح شغل). ۳. تخصیص مسئولیت برای گزارش‌دهی عملکرد ISMS به مدیریت ارشد.", evidence: "چارت سازمانی، شرح شغل‌های دارای مسئولیت‌های امنیتی، سند تعریف نقش‌ها و مسئولیت‌ها." },
+        '6.1': { description: "سازمان باید ریسک‌ها و فرصت‌های مرتبط با ISMS را شناسایی و برای رسیدگی به آن‌ها برنامه‌ریزی کند.", implementation: "۱. ادغام خروجی‌های بند ۴.۱ و ۴.۲ در فرآیند ارزیابی ریسک. ۲. شناسایی ریسک‌های مرتبط با محرمانگی، یکپارچگی و در دسترس بودن اطلاعات. ۳. برنامه‌ریزی برای اجرای اقدامات مقابله با ریسک (Risk Treatment).", evidence: "رویه مدیریت ریسک، گزارش ارزیابی ریسک، برنامه مقابله با ریسک (RTP)." },
+        '6.2': { description: "سازمان باید اهداف امنیت اطلاعات را در سطوح و فرآیندهای مرتبط تعیین کند.", implementation: "۱. تعریف اهداف قابل اندازه‌گیری (SMART) که با خط‌مشی امنیت اطلاعات سازگار باشند. ۲. برنامه‌ریزی برای دستیابی به این اهداف (شامل منابع، مسئولیت‌ها، زمان‌بندی و نحوه ارزیابی).", evidence: "سند اهداف امنیت اطلاعات، برنامه‌های عملیاتی برای دستیابی به اهداف." },
+        '6.3': { description: "هنگامی که سازمان نیاز به تغییر در ISMS را تشخیص می‌دهد، این تغییرات باید به صورت برنامه‌ریزی شده انجام شوند.", implementation: "۱. تدوین فرآیند مدیریت تغییر. ۲. در نظر گرفتن هدف تغییر و پیامدهای بالقوه آن. ۳. حصول اطمینان از حفظ یکپارچگی ISMS در حین و پس از تغییر. ۴. تخصیص منابع و مسئولیت‌های لازم.", evidence: "رویه مدیریت تغییر، سوابق درخواست‌های تغییر (RFC)، گزارش‌های ارزیابی تأثیر تغییرات." },
+        '7.1': { description: "سازمان باید منابع لازم برای استقرار، نگهداری و بهبود مداوم ISMS را تأمین کند.", implementation: "۱. شناسایی نیازهای منابع (انسانی، فنی، مالی). ۲. تأمین بودجه و کارکنان متخصص. ۳. فراهم کردن زیرساخت‌های لازم.", evidence: "شواهد تخصیص بودجه، لیست کارکنان تیم امنیت، لیست دارایی‌های سخت‌افزاری و نرم‌افزاری امنیتی." },
+        '7.2': { description: "سازمان باید اطمینان حاصل کند که افرادی که بر عملکرد امنیت اطلاعات تأثیر می‌گذارند، دارای صلاحیت لازم هستند.", implementation: "۱. تعیین شایستگی‌های مورد نیاز برای هر نقش امنیتی. ۲. ارزیابی صلاحیت کارکنان موجود. ۳. برنامه‌ریزی برای آموزش یا استخدام جهت رفع کمبودها. ۴. نگهداری سوابق صلاحیت.", evidence: "شرح شغل‌ها با ذکر شایستگی‌های لازم، سوابق تحصیلی و گواهینامه‌های کارکنان، برنامه و سوابق آموزشی." },
+        '7.3': { description: "کارکنان باید از خط‌مشی امنیت اطلاعات، نقش خود در ISMS، و پیامدهای عدم انطباق آگاه باشند.", implementation: "۱. برگزاری دوره‌های آگاهی‌رسانی امنیت اطلاعات برای تمام کارکنان. ۲. استفاده از روش‌های مختلف مانند پوستر، ایمیل و جلسات برای اطلاع‌رسانی. ۳. اطمینان از اینکه کارکنان اهمیت امنیت اطلاعات را درک می‌کنند.", evidence: "محتوای آگاهی‌رسانی، سوابق شرکت در دوره‌های آگاهی‌رسانی، نظرسنجی‌های ارزیابی سطح آگاهی." },
+        '7.4': { description: "سازمان باید ارتباطات داخلی و خارجی مرتبط با ISMS را تعیین کند.", implementation: "۱. مشخص کردن اینکه چه چیزی، چه زمانی، با چه کسی، و چگونه باید ارتباط برقرار شود. ۲. ایجاد کانال‌های ارتباطی مشخص (مانند جلسات، پورتال داخلی، ایمیل‌های رسمی).", evidence: "رویه ارتباطات، ماتریس ارتباطات، نمونه‌هایی از ارتباطات انجام شده (مانند صورت‌جلسات، ایمیل‌ها)." },
+        '7.5': { description: "ISMS سازمان باید شامل اطلاعات مستند مورد نیاز استاندارد و اطلاعاتی باشد که سازمان برای اثربخشی ISMS ضروری می‌داند.", implementation: "۱. تدوین رویه‌ای برای ایجاد، به‌روزرسانی و کنترل اطلاعات مستند. ۲. اطمینان از شناسایی، قالب‌بندی و بازبینی مناسب مستندات. ۳. کنترل دسترسی، توزیع، ذخیره‌سازی و نگهداری از مستندات.", evidence: "رویه کنترل اطلاعات مستند، لیست جامع مستندات ISMS (Master List of Documents)." },
+        '8.1': { description: "سازمان باید فرآیندهای مورد نیاز برای برآورده کردن الزامات امنیت اطلاعات را برنامه‌ریزی، پیاده‌سازی و کنترل کند.", implementation: "۱. تعریف معیارهای عملیاتی برای فرآیندها. ۲. پیاده‌سازی کنترل‌ها برای حفظ فرآیندها مطابق با برنامه‌ریزی. ۳. مستندسازی فرآیندها تا حد لازم برای اطمینان از اجرای آن‌ها.", evidence: "رویه‌های عملیاتی (SOPs)، دستورالعمل‌های کاری، سوابق اجرای فرآیندها." },
+        '8.2': { description: "سازمان باید ارزیابی‌های ریسک امنیت اطلاعات را در فواصل زمانی برنامه‌ریزی شده یا هنگام بروز تغییرات قابل توجه انجام دهد.", implementation: "۱. اجرای فرآیند ارزیابی ریسک مطابق با رویه مستند (بند ۶.۱.۲). ۲. شناسایی، تحلیل و ارزیابی ریسک‌های جدید. ۳. اطمینان از اینکه نتایج ارزیابی ریسک سازگار و قابل مقایسه هستند.", evidence: "گزارش‌های دوره‌ای ارزیابی ریسک، سوابق بازنگری ریسک‌ها پس از تغییرات." },
+        '8.3': { description: "سازمان باید برنامه مقابله با ریسک امنیت اطلاعات را پیاده‌سازی کند.", implementation: "۱. اجرای اقدامات تعریف شده در برنامه مقابله با ریسک (RTP). ۲. تخصیص منابع و مسئولیت‌ها برای اجرای اقدامات. ۳. پیگیری پیشرفت و اثربخشی اقدامات.", evidence: "سوابق اجرای اقدامات مقابله با ریسک، گزارش‌های پیشرفت RTP." },
+        '9.1': { description: "سازمان باید عملکرد امنیت اطلاعات و اثربخشی ISMS را پایش، اندازه‌گیری، تحلیل و ارزیابی کند.", implementation: "۱. تعیین اینکه چه چیزی نیاز به پایش و اندازه‌گیری دارد. ۲. تعریف روش‌های پایش، اندازه‌گیری، تحلیل و ارزیابی. ۳. تعیین زمان‌بندی برای انجام این فعالیت‌ها. ۴. مستندسازی نتایج.", evidence: "رویه پایش و اندازه‌گیری، گزارش‌های تحلیل شاخص‌های امنیتی (KPIs)، داشبوردهای امنیتی." },
+        '9.2': { description: "سازمان باید ممیزی‌های داخلی را در فواصل زمانی برنامه‌ریزی شده انجام دهد تا اطلاعاتی در مورد انطباق ISMS با الزامات خود سازمان و استاندارد فراهم کند.", implementation: "۱. تدوین برنامه ممیزی داخلی. ۲. انتخاب ممیزان واجد شرایط و بی‌طرف. ۳. اجرای ممیزی و گزارش نتایج به مدیریت. ۴. پیگیری عدم انطباق‌های شناسایی شده.", evidence: "برنامه ممیزی سالانه، گزارش‌های ممیزی داخلی، سوابق صلاحیت ممیزان، سوابق اقدامات اصلاحی." },
+        '9.3': { description: "مدیریت ارشد باید ISMS سازمان را در فواصل زمانی برنامه‌ریزی شده بازنگری کند تا از تداوم تناسب، کفایت و اثربخشی آن اطمینان حاصل کند.", implementation: "۱. برنامه‌ریزی و زمان‌بندی جلسات بازنگری مدیریت. ۲. جمع‌آوری ورودی‌های مورد نیاز جلسه (مانند نتایج ممیزی، بازخورد ذی‌نفعان، وضعیت ریسک‌ها). ۳. بحث و تصمیم‌گیری در مورد فرصت‌های بهبود. ۴. مستندسازی خروجی‌ها و تصمیمات.", evidence: "صورت‌جلسات بازنگری مدیریت، لیست تصمیمات و اقدامات مصوب." },
+        '10.1': { description: "سازمان باید به طور مداوم تناسب، کفایت و اثربخشی ISMS را بهبود دهد.", implementation: "۱. استفاده از خروجی‌های تحلیل و ارزیابی (بند ۹.۱)، ممیزی داخلی (۹.۲) و بازنگری مدیریت (۹.۳) به عنوان ورودی برای بهبود. ۲. شناسایی و پیاده‌سازی فرصت‌های بهبود.", evidence: "سوابق پروژه‌های بهبود، گزارش‌های تحلیل روند شاخص‌ها، به‌روزرسانی مستندات بر اساس بهبودها." },
+        '10.2': { description: "در هنگام بروز عدم انطباق، سازمان باید واکنش نشان داده و برای کنترل، اصلاح و رسیدگی به پیامدهای آن اقدام کند.", implementation: "۱. تدوین رویه مدیریت عدم انطباق و اقدام اصلاحی. ۲. ثبت و تحلیل ریشه‌ای عدم انطباق‌ها. ۳. تعریف و اجرای اقدامات اصلاحی برای حذف علل ریشه‌ای. ۴. بازنگری اثربخشی اقدامات اصلاحی انجام شده.", evidence: "رویه مدیریت عدم انطباق، سوابق عدم انطباق‌های ثبت شده (فرم‌های CAR)، گزارش‌های تحلیل ریشه‌ای." },
+        'A.5.1': { description: 'هدف این کنترل، اطمینان از وجود یک چارچوب مدیریتی روشن برای امنیت اطلاعات است که توسط مدیریت ارشد تأیید شده و به همه کارکنان اطلاع‌رسانی می‌شود.', implementation: '۱. تدوین خط‌مشی مادر امنیت اطلاعات. ۲. تعریف اهداف و دامنه خط‌مشی. ۳. اخذ تأییدیه از مدیریت ارشد. ۴. اطلاع‌رسانی و آموزش خط‌مشی به تمام کارکنان و طرف‌های ذی‌نفع.', evidence: 'سند خط‌مشی امنیت اطلاعات (نسخه امضاشده)، سوابق اطلاع‌رسانی و آموزش به کارکنان، صورت‌جلسه بازنگری مدیریت.' },
+        'A.5.2': { description: 'این کنترل بر تعریف، تخصیص و اطلاع‌رسانی مسئولیت‌های مرتبط با امنیت اطلاعات در سراسر سازمان تمرکز دارد.', implementation: '۱. تعریف نقش‌های کلیدی (مانند مسئول امنیت اطلاعات). ۲. مستندسازی مسئولیت‌ها در شرح شغل‌ها. ۳. تشکیل کمیته راهبری امنیت اطلاعات.', evidence: 'چارت سازمانی با نقش‌های امنیتی، شرح شغل‌های به‌روز شده، مستندات کمیته راهبری.' },
+        'A.5.3': { description: 'هدف، کاهش ریسک خطای عمدی یا سهوی از طریق تفکیک وظایف و مسئولیت‌های متعارض است.', implementation: '۱. شناسایی وظایف حساس (مانند درخواست، تأیید و اجرای یک تغییر). ۲. تفکیک این وظایف بین افراد مختلف. ۳. پیاده‌سازی کنترل‌های سیستمی برای اعمال تفکیک وظایف.', evidence: 'ماتریس تفکیک وظایف (SoD Matrix)، رویه‌های مستند، لاگ‌های سیستم که نشان‌دهنده اجرای وظایف توسط افراد مختلف است.' },
+        'A.6.1': { description: 'هدف این کنترل، انجام بررسی‌های لازم در مورد سوابق داوطلبان استخدام متناسب با الزامات کسب‌وکار، طبقه‌بندی اطلاعات و ریسک‌های موجود است.', implementation: '۱. تعریف سطوح مختلف بررسی سوابق برای نقش‌های شغلی گوناگون. ۲. کسب رضایت کتبی از داوطلبان برای انجام بررسی‌ها. ۳. انجام بررسی‌ها (مانند بررسی سوابق تحصیلی، شغلی و عدم سوءپیشینه) مطابق با قوانین.', evidence: 'رویه غربالگری کارکنان، فرم‌های تکمیل‌شده رضایت‌نامه، سوابق بررسی‌های انجام‌شده برای کارکنان.' },
+        'A.6.2': { description: 'اطمینان از اینکه کارکنان و پیمانکاران مسئولیت‌های امنیت اطلاعات خود را درک کرده و می‌پذیرند.', implementation: '۱. گنجاندن بندهای مربوط به امنیت اطلاعات و محرمانگی در قراردادهای کاری. ۲. تعریف و اطلاع‌رسانی مسئولیت‌های امنیتی به کارکنان در بدو استخدام. ۳. اخذ امضای تعهدنامه محرمانگی (NDA) از کارکنان.', evidence: 'نمونه قرارداد کاری شامل بندهای امنیتی، تعهدنامه‌های امضاشده، مستندات مربوط به فرآیند آنبوردینگ کارکنان.' },
+        'A.6.3': { description: 'هدف، افزایش آگاهی و ارتقای صلاحیت کارکنان در زمینه امنیت اطلاعات برای انجام موثر وظایفشان است.', implementation: '۱. تدوین برنامه آگاهی‌رسانی و آموزش امنیت اطلاعات. ۲. برگزاری دوره‌های آموزشی منظم برای تمام کارکنان. ۳. ارسال پیام‌های آگاهی‌رسانی دوره‌ای (مانند ایمیل، پوستر). ۴. ارزیابی اثربخشی آموزش‌ها.', evidence: 'برنامه سالانه آموزش، لیست حضور و غیاب در دوره‌ها، محتوای آموزشی، نتایج آزمون‌ها و ارزیابی‌ها.' },
+        'A.6.4': { description: 'اطمینان از وجود یک فرآیند انضباطی رسمی برای رسیدگی به تخلفات امنیتی کارکنان.', implementation: '۱. تدوین و اطلاع‌رسانی آیین‌نامه انضباطی شامل تخلفات امنیتی. ۲. تعریف مراحل رسیدگی به تخلفات. ۳. اطمینان از اجرای عادلانه و یکپارچه فرآیند.', evidence: 'آیین‌نامه انضباطی مصوب، سوابق (محرمانه) رسیدگی به تخلفات امنیتی.' },
+        'A.6.5': { description: 'حفاظت از منافع سازمان پس از خاتمه یا تغییر شغل کارکنان.', implementation: '۱. تعریف مسئولیت‌های امنیتی در فرآیند خاتمه همکاری (مانند بازگرداندن دارایی‌ها، حذف دسترسی‌ها). ۲. اطلاع‌رسانی این مسئولیت‌ها به کارمند در زمان مناسب. ۳. اطمینان از تداوم اعتبار تعهدات محرمانگی پس از ترک سازمان.', evidence: 'چک‌لیست فرآیند خاتمه همکاری، سوابق بازگرداندن دارایی‌ها، سوابق حذف دسترسی‌ها.' },
+        'A.6.6': { description: 'اطمینان از اینکه کارکنان و سایر طرف‌های ذی‌نفع از تعهدات خود در قبال حفظ محرمانگی اطلاعات آگاه هستند.', implementation: '۱. شناسایی اطلاعاتی که نیاز به محرمانگی دارند. ۲. تهیه و تنظیم توافق‌نامه‌های محرمانگی یا عدم افشا (NDA). ۳. اخذ امضای این توافق‌نامه‌ها از افراد مربوطه.', evidence: 'نمونه فرم تعهدنامه محرمانگی (NDA)، لیست افرادی که این تعهدنامه را امضا کرده‌اند.' },
+        'A.6.7': { description: 'مدیریت ریسک‌های امنیتی ناشی از کار کردن کارکنان در خارج از محیط سازمان.', implementation: '۱. تدوین خط‌مشی کار از راه دور. ۲. تأمین تجهیزات امن (مانند لپ‌تاپ با VPN) برای کارکنان دورکار. ۳. ارائه آموزش‌های لازم در خصوص امنیت در دورکاری. ۴. تعریف قوانین کنترل دسترسی از راه دور.', evidence: 'خط‌مشی کار از راه دور، سوابق تحویل تجهیزات امن، مستندات پیکربندی VPN، سوابق آموزش به کارکنان دورکار.' },
+        'A.6.8': { description: 'ایجاد یک کانال مشخص و موثر برای گزارش‌دهی سریع رخدادها و ضعف‌های امنیت اطلاعات.', implementation: '۱. تعریف فرآیند گزارش‌دهی رخداد. ۲. ایجاد کانال‌های ارتباطی برای گزارش‌دهی (مانند ایمیل یا تلفن مشخص). ۳. آموزش به کارکنان در مورد اینکه چه چیزی را، چگونه و به چه کسی گزارش دهند.', evidence: 'رویه مدیریت رخداد، فرم گزارش رخداد، سوابق رخدادهای گزارش‌شده.' },
+        'A.7.1': { description: 'حفاظت از مناطقی که اطلاعات حساس و دارایی‌های مرتبط در آن قرار دارند، با استفاده از مرزهای امنیتی فیزیکی مشخص و محافظت‌شده.', implementation: '۱. شناسایی مناطق امن. ۲. استفاده از دیوارها، دروازه‌های کنترل تردد و پذیرش برای ایجاد مرز. ۳. نصب علائم هشداردهنده در پیرامون مناطق امن.', evidence: 'نقشه سایت با مشخص بودن مرزها، گزارش سیستم کنترل تردد، تصاویر دوربین‌های مداربسته از ورودی‌ها.' },
+        'A.7.2': { description: 'اطمینان از اینکه فقط افراد مجاز به فضاهای فیزیکی سازمان دسترسی دارند.', implementation: '۱. استقرار سیستم کنترل دسترسی (کارت، کد، بیومتریک) در ورودی‌ها. ۲. استقرار نیروهای حراست یا پذیرش برای بررسی هویت افراد. ۳. ثبت ورود و خروج تمام بازدیدکنندگان.', evidence: 'سیاهه ورود و خروج بازدیدکنندگان، گزارش‌های سیستم کنترل دسترسی، دستورالعمل‌های نگهبانی.' },
+        'A.7.3': { description: 'حفاظت از دفاتر، اتاق‌ها و تأسیسات در برابر دسترسی‌های غیرمجاز و آسیب‌های احتمالی.', implementation: '۱. استفاده از قفل‌های مناسب برای درها و پنجره‌ها. ۲. محدود کردن دسترسی به اتاق‌های سرور و بایگانی. ۳. ایمن‌سازی فضاهای کاری پس از ساعات اداری.', evidence: 'روش مدیریت کلیدها، لیست دسترسی به مناطق محدود، گزارش بازرسی‌های امنیتی دوره‌ای.' },
+        'A.7.4': { description: 'پایش مداوم فضاهای فیزیکی برای شناسایی و جلوگیری از دسترسی‌های غیرمجاز.', implementation: '۱. نصب و راه‌اندازی دوربین‌های مداربسته در نقاط حساس. ۲. استفاده از سیستم‌های اعلام سرقت و هشدار نفوذ. ۳. انجام گشت‌زنی‌های منظم توسط نیروهای حراست.', evidence: 'تصاویر ضبط‌شده دوربین‌ها، گزارش‌های سیستم اعلام سرقت، لاگ گشت‌زنی نگهبانان.' },
+        'A.7.5': { description: 'حفاظت از دارایی‌های اطلاعاتی در برابر حوادث طبیعی (مانند سیل و زلزله) و تهدیدات انسان‌ساز (مانند آتش‌سوزی و خرابکاری).', implementation: '۱. نصب سیستم‌های اعلام و اطفاء حریق. ۲. استفاده از منابع تغذیه اضطراری (UPS و ژنراتور). ۳. کنترل شرایط محیطی (دما و رطوبت) در اتاق‌های سرور.', evidence: 'سوابق تست و نگهداری سیستم‌های اطفاء حریق و UPS، گزارش‌های سیستم پایش شرایط محیطی.' },
+        'A.7.6': { description: 'ایجاد و اجرای رویه‌های امن برای انجام فعالیت‌ها در مناطق حفاظت‌شده.', implementation: '۱. الزام به همراهی بازدیدکنندگان در مناطق امن. ۲. ممنوعیت استفاده از دستگاه‌های ضبط تصویر شخصی. ۳. آموزش کارکنان در مورد رویه‌های کار در این مناطق.', evidence: 'رویه کار در مناطق امن، آموزش‌های ارائه‌شده به کارکنان، لاگ همراهی بازدیدکنندگان.' },
+        'A.7.7': { description: 'کاهش ریسک دسترسی غیرمجاز به اطلاعات از طریق پاکسازی میزکار از اسناد کاغذی و قفل کردن صفحه نمایش کامپیوترها.', implementation: '۱. تدوین و ابلاغ خط‌مشی میز پاک و صفحه پاک. ۲. فراهم کردن کمدهای قفل‌دار برای نگهداری اسناد. ۳. تنظیم قفل خودکار صفحه نمایش در کامپیوترها.', evidence: 'سند خط‌مشی میز پاک و صفحه پاک، تصاویر مشاهدات در بازرسی‌های داخلی.' },
+        'A.7.8': { description: 'قرار دادن تجهیزات در مکانی مناسب برای کاهش ریسک‌های محیطی و دسترسی‌های غیرمجاز.', implementation: '۱. جانمایی سرورها و تجهیزات شبکه در اتاق‌های امن. ۲. جلوگیری از قرار دادن تجهیزات حساس در معرض دید عموم. ۳. ایمن‌سازی فیزیکی تجهیزات (مانند قفل کردن رک‌ها).', evidence: 'نقشه جانمایی تجهیزات در دیتا سنتر، تصاویر رک‌های قفل‌شده.' },
+        'A.7.9': { description: 'اعمال کنترل‌های امنیتی برای دارایی‌هایی که خارج از اماکن سازمان استفاده می‌شوند.', implementation: '۱. رمزنگاری کامل دیسک سخت لپ‌تاپ‌ها. ۲. تدوین خط‌مشی استفاده امن از تجهیزات در مکان‌های عمومی. ۳. قابلیت پاک کردن اطلاعات از راه دور در صورت سرقت یا مفقودی.', evidence: 'خط‌مشی امنیت کار از راه دور، مستندات پیاده‌سازی رمزنگاری دیسک، رویه گزارش مفقودی تجهیزات.' },
+        'A.7.10': { description: 'مدیریت امن رسانه‌های ذخیره‌سازی (مانند هارد دیسک، فلش مموری) در طول چرخه عمر آن‌ها.', implementation: '۱. رویه ثبت و ردیابی رسانه‌های ذخیره‌سازی. ۲. رمزنگاری اطلاعات روی رسانه‌های قابل حمل. ۳. روش‌های امحاء امن اطلاعات (مانند خرد کردن یا Degaussing).', evidence: 'رویه مدیریت رسانه‌های ذخیره‌سازی، لیست رسانه‌های موجود، گواهی امحاء اطلاعات.' },
+        'A.7.11': { description: 'حفاظت از تجهیزات در برابر قطعی و نوسانات تأسیسات زیربنایی مانند برق و تهویه.', implementation: '۱. استفاده از UPS و ژنراتور برای تأمین برق اضطراری. ۲. در نظر گرفتن سیستم‌های سرمایشی پشتیبان برای اتاق سرور. ۳. بازرسی دوره‌ای کابل‌کشی برق و شبکه.', evidence: 'سوابق نگهداری UPS و ژنراتور، قراردادهای پشتیبانی تأسیسات، گزارش بازرسی‌های دوره‌ای.' },
+        'A.7.12': { description: 'حفاظت از کابل‌های برق و شبکه در برابر شنود، تداخل و آسیب فیزیکی.', implementation: '۱. استفاده از داکت و کانال‌های محافظ برای کابل‌کشی. ۲. جداسازی کابل‌های برق از کابل‌های داده. ۳. محدود کردن دسترسی به پچ پنل‌ها و نقاط توزیع شبکه.', evidence: 'تصاویر داکت‌کشی و آرایش رک‌ها، نقشه شبکه فیزیکی.' },
+        'A.7.13': { description: 'اطمینان از نگهداری صحیح و به‌موقع تجهیزات برای حفظ در دسترس بودن و یکپارچگی آن‌ها.', implementation: '۱. تدوین برنامه نگهداری پیشگیرانه (PM). ۲. ثبت تمام فعالیت‌های نگهداری و تعمیر. ۳. استفاده از تعمیرکاران مجاز و مورد اعتماد.', evidence: 'برنامه و سوابق نگهداری تجهیزات، قراردادهای پشتیبانی با تأمین‌کنندگان.' },
+        'A.7.14': { description: 'جلوگیری از نشت اطلاعات حساس هنگام دور انداختن یا استفاده مجدد از تجهیزات.', implementation: '۱. تدوین رویه امحاء یا استفاده مجدد از تجهیزات. ۲. پاک‌سازی امن داده‌ها از روی حافظه‌ها قبل از خروج از سازمان. ۳. تخریب فیزیکی حافظه‌هایی که اطلاعات بسیار حساس دارند.', evidence: 'رویه امحاء دارایی‌ها، گواهی پاک‌سازی یا تخریب داده‌ها، سوابق تجهیزات خارج‌شده.' },
+        // ... (Generated content for ALL other controls would be here)
+    };
+    
     const defaultAssessmentData = [ { id: 'clause-4', title: 'بند ۴: زمینه سازمان', type: 'mandatory', controls: [ { id: '4.1', title: 'درک سازمان و زمینه آن', status: 'not_assessed' }, { id: '4.2', title: 'درک نیازها و انتظارات طرف‌های ذینفع', status: 'not_assessed' }, { id: '4.3', title: 'تعیین دامنه سیستم مدیریت امنیت اطلاعات', status: 'not_assessed' }, { id: '4.4', title: 'سیستم مدیریت امنیت اطلاعات', status: 'not_assessed' } ] }, { id: 'clause-5', title: 'بند ۵: رهبری', type: 'mandatory', controls: [ { id: '5.1', title: 'رهبری و تعهد', status: 'not_assessed' }, { id: '5.2', title: 'خط‌مشی', status: 'not_assessed' }, { id: '5.3', title: 'نقش‌ها، مسئولیت‌ها و اختیارات سازمانی', status: 'not_assessed' } ] }, { id: 'clause-6', title: 'بند ۶: برنامه‌ریزی', type: 'mandatory', controls: [ { id: '6.1', title: 'اقدامات برای رسیدگی به ریسک‌ها و فرصت‌ها', status: 'not_assessed' }, { id: '6.2', title: 'اهداف امنیت اطلاعات و برنامه‌ریزی برای دستیابی به آنها', status: 'not_assessed' }, { id: '6.3', title: 'برنامه‌ریزی تغییرات', status: 'not_assessed' } ] }, { id: 'clause-7', title: 'بند ۷: پشتیبانی', type: 'mandatory', controls: [ { id: '7.1', title: 'منابع', status: 'not_assessed' }, { id: '7.2', title: 'صلاحیت', status: 'not_assessed' }, { id: '7.3', title: 'آگاهی', status: 'not_assessed' }, { id: '7.4', title: 'ارتباطات', status: 'not_assessed' }, { id: '7.5', title: 'اطلاعات مستند', status: 'not_assessed' } ] }, { id: 'clause-8', title: 'بند ۸: عملیات', type: 'mandatory', controls: [ { id: '8.1', title: 'برنامه‌ریزی و کنترل عملیاتی', status: 'not_assessed' }, { id: '8.2', title: 'ارزیابی ریسک امنیت اطلاعات', status: 'not_assessed' }, { id: '8.3', title: 'برخورد با ریسک امنیت اطلاعات', status: 'not_assessed' } ] }, { id: 'clause-9', title: 'بند ۹: ارزیابی عملکرد', type: 'mandatory', controls: [ { id: '9.1', title: 'پایش، اندازه‌گیری، تحلیل و ارزیابی', status: 'not_assessed' }, { id: '9.2', title: 'ممیزی داخلی', status: 'not_assessed' }, { id: '9.3', title: 'بازنگری مدیریت', status: 'not_assessed' } ] }, { id: 'clause-10', title: 'بند ۱۰: بهبود', type: 'mandatory', controls: [ { id: '10.1', title: 'بهبود مداوم', status: 'not_assessed' }, { id: '10.2', title: 'عدم انطباق و اقدام اصلاحی', status: 'not_assessed' } ] }, { id: 'annex-a5', title: 'A.5: کنترل‌های سازمانی', type: 'annexA', subCategories: [ { title: 'سیاست‌گذاری و حاکمیت', controls: [ { id: 'A.5.1', title: 'خط‌مشی‌های امنیت اطلاعات', status: 'not_assessed' }, { id: 'A.5.2', title: 'نقش‌ها و مسئولیت‌های امنیت اطلاعات', status: 'not_assessed' }, { id: 'A.5.3', title: 'تفکیک وظایف', status: 'not_assessed' }, { id: 'A.5.4', title: 'مسئولیت‌های مدیریت', status: 'not_assessed' }, { id: 'A.5.36', title: 'انطباق با خط‌مشی‌ها، قوانین و استانداردهای امنیت اطلاعات', status: 'not_assessed' } ] }, { title: 'مدیریت دارایی و اطلاعات', controls: [ { id: 'A.5.9', title: 'فهرست اموال اطلاعات و سایر دارایی‌های مرتبط', status: 'not_assessed' }, { id: 'A.5.10', title: 'استفاده قابل قبول از اطلاعات و سایر دارایی‌های مرتبط', status: 'not_assessed' }, { id: 'A.5.11', title: 'بازگرداندن دارایی‌ها', status: 'not_assessed' }, { id: 'A.5.12', title: 'طبقه‌بندی اطلاعات', status: 'not_assessed' }, { id: 'A.5.13', title: 'برچسب‌گذاری اطلاعات', status: 'not_assessed' }, { id: 'A.5.14', title: 'انتقال اطلاعات', status: 'not_assessed' } ] }, { title: 'کنترل دسترسی', controls: [ { id: 'A.5.15', title: 'کنترل دسترسی', status: 'not_assessed' }, { id: 'A.5.16', title: 'مدیریت هویت', status: 'not_assessed' }, { id: 'A.5.17', title: 'اطلاعات احراز هویت', status: 'not_assessed' }, { id: 'A.5.18', title: 'حقوق دسترسی', status: 'not_assessed' } ] }, { title: 'روابط خارجی و پروژه', controls: [ { id: 'A.5.5', title: 'تماس با مراجع ذی‌صلاح', status: 'not_assessed' }, { id: 'A.5.6', title: 'تماس با گروه‌های ذی‌نفع خاص', status: 'not_assessed' }, { id: 'A.5.7', title: 'هوشمندی تهدیدات', status: 'not_assessed' }, { id: 'A.5.8', title: 'امنیت اطلاعات در مدیریت پروژه', status: 'not_assessed' } ] }, { title: 'روابط با تامین‌کنندگان', controls: [ { id: 'A.5.19', title: 'امنیت اطلاعات در روابط با تامین‌کننده', status: 'not_assessed' }, { id: 'A.5.20', title: 'رسیدگی به امنیت اطلاعات در توافق‌نامه‌های تامین‌کننده', status: 'not_assessed' }, { id: 'A.5.21', title: 'مدیریت امنیت اطلاعات در زنجیره تامین ICT', status: 'not_assessed' }, { id: 'A.5.22', title: 'پایش، بازبینی و مدیریت تغییر خدمات تامین‌کننده', status: 'not_assessed' }, { id: 'A.5.23', title: 'امنیت اطلاعات برای استفاده از خدمات ابری', status: 'not_assessed' } ] }, { title: 'مدیریت رخداد و تداوم کسب و کار', controls: [ { id: 'A.5.24', title: 'برنامه‌ریزی و آمادگی مدیریت رخداد امنیت اطلاعات', status: 'not_assessed' }, { id: 'A.5.25', title: 'ارزیابی و تصمیم‌گیری در مورد رخدادهای امنیت اطلاعات', status: 'not_assessed' }, { id: 'A.5.26', title: 'پاسخ به رخدادهای امنیت اطلاعات', status: 'not_assessed' }, { id: 'A.5.27', title: 'یادگیری از رخدادهای امنیت اطلاعات', status: 'not_assessed' }, { id: 'A.5.28', title: 'جمع‌آوری شواهد', status: 'not_assessed' }, { id: 'A.5.29', title: 'امنیت اطلاعات در هنگام اختلال', status: 'not_assessed' }, { id: 'A.5.30', title: 'آمادگی ICT برای تداوم کسب و کار', status: 'not_assessed' } ] }, { title: 'الزامات و انطباق', controls: [ { id: 'A.5.31', title: 'شناسایی الزامات قانونی، مقرراتی و قراردادی', status: 'not_assessed' }, { id: 'A.5.32', title: 'حقوق مالکیت معنوی', status: 'not_assessed' }, { id: 'A.5.33', title: 'حفاظت از سوابق', status: 'not_assessed' }, { id: 'A.5.34', title: 'حریم خصوصی و حفاظت از اطلاعات شناسایی شخصی (PII)', status: 'not_assessed' }, { id: 'A.5.35', title: 'بازبینی مستقل امنیت اطلاعات', status: 'not_assessed' }, { id: 'A.5.37', title: 'روش‌های عملیاتی مستند', status: 'not_assessed' } ] }, ] }, { id: 'annex-a6', title: 'A.6: کنترل‌های فردی', type: 'annexA', controls: [ { id: 'A.6.1', title: 'غربالگری', status: 'not_assessed' }, { id: 'A.6.2', title: 'شرایط و ضوابط استخدام', status: 'not_assessed' }, { id: 'A.6.3', title: 'آگاهی، آموزش و پرورش امنیت اطلاعات', status: 'not_assessed' }, { id: 'A.6.4', title: 'فرآیند انضباطی', status: 'not_assessed' }, { id: 'A.6.5', title: 'مسئولیت‌ها پس از خاتمه یا تغییر شغل', status: 'not_assessed' }, { id: 'A.6.6', title: 'توافق‌نامه‌های محرمانگی یا عدم افشا', status: 'not_assessed' }, { id: 'A.6.7', title: 'کار از راه دور', status: 'not_assessed' }, { id: 'A.6.8', title: 'گزارش‌دهی رخداد امنیت اطلاعات', status: 'not_assessed' } ] }, { id: 'annex-a7', title: 'A.7: کنترل‌های فیزیکی', type: 'annexA', controls: [ { id: 'A.7.1', title: 'پیرامون‌های امنیتی فیزیکی', status: 'not_assessed' }, { id: 'A.7.2', title: 'ورود فیزیکی', status: 'not_assessed' }, { id: 'A.7.3', title: 'ایمن‌سازی دفاتر، اتاق‌ها و امکانات', status: 'not_assessed' }, { id: 'A.7.4', title: 'پایش امنیت فیزیکی', status: 'not_assessed' }, { id: 'A.7.5', title: 'حفاظت در برابر تهدیدات فیزیکی و محیطی', status: 'not_assessed' }, { id: 'A.7.6', title: 'کار در مناطق امن', status: 'not_assessed' }, { id: 'A.7.7', title: 'میز پاک و صفحه پاک', status: 'not_assessed' }, { id: 'A.7.8', title: 'قراردادن و حفاظت از تجهیزات', status: 'not_assessed' }, { id: 'A.7.9', 'title': 'امنیت دارایی‌ها در خارج از محل', status: 'not_assessed' }, { id: 'A.7.10', title: 'رسانه‌های ذخیره‌سازی', status: 'not_assessed' }, { id: 'A.7.11', title: 'پشتیبانی از تاسیسات', status: 'not_assessed' }, { id: 'A.7.12', title: 'امنیت کابل‌کشی', status: 'not_assessed' }, { id: 'A.7.13', title: 'نگهداری تجهیزات', status: 'not_assessed' }, { id: 'A.7.14', title: 'دفع امن دارایی‌ها', status: 'not_assessed' } ] }, { id: 'annex-a8', title: 'A.8: کنترل‌های فناوری', type: 'annexA', subCategories: [ { title: 'نقاط پایانی و دسترسی امن', controls: [ { id: 'A.8.1', title: 'تجهیزات کاربر نهایی', status: 'not_assessed' }, { id: 'A.8.2', title: 'حقوق دسترسی ممتاز', status: 'not_assessed' }, { id: 'A.8.3', title: 'محدودیت دسترسی به اطلاعات', status: 'not_assessed' }, { id: 'A.8.4', title: 'دسترسی به کد منبع', status: 'not_assessed' }, { id: 'A.8.5', title: 'احراز هویت امن', status: 'not_assessed' }, { id: 'A.8.18', title: 'استفاده از ابزارهای مدیریتی ممتاز', status: 'not_assessed' } ] }, { title: 'مدیریت زیرساخت و پلتفرم', controls: [ { id: 'A.8.6', title: 'مدیریت ظرفیت', status: 'not_assessed' }, { id: 'A.8.7', title: 'حفاظت در برابر بدافزار', status: 'not_assessed' }, { id: 'A.8.8', title: 'مدیریت آسیب‌پذیری‌های فنی', status: 'not_assessed' }, { id: 'A.8.9', title: 'مدیریت پیکربندی', status: 'not_assessed' }, { id: 'A.8.19', title: 'نصب نرم‌افزار بر روی سیستم‌های عملیاتی', status: 'not_assessed' } ] }, { title: 'حفاظت از داده‌ها', controls: [ { id: 'A.8.10', title: 'حذف اطلاعات', status: 'not_assessed' }, { id: 'A.8.11', title: 'ماسک کردن داده‌ها', status: 'not_assessed' }, { id: 'A.8.12', title: 'جلوگیری از نشت داده‌ها', status: 'not_assessed' }, { id: 'A.8.13', title: 'پشتیبان‌گیری اطلاعات', status: 'not_assessed' }, { id: 'A.8.14', title: 'تکرارپذیری اطلاعات', status: 'not_assessed' }, { id: 'A.8.24', title: 'استفاده از رمزنگاری', status: 'not_assessed' } ] }, { title: 'پایش و ثبت وقایع', controls: [ { id: 'A.8.15', title: 'ثبت وقایع (Logging)', status: 'not_assessed' }, { id: 'A.8.16', title: 'پایش فعالیت‌ها', status: 'not_assessed' }, { id: 'A.8.17', title: 'همگام‌سازی ساعت', status: 'not_assessed' } ] }, { title: 'امنیت شبکه', controls: [ { id: 'A.8.20', title: 'امنیت شبکه', status: 'not_assessed' }, { id: 'A.8.21', title: 'امنیت خدمات شبکه', status: 'not_assessed' }, { id: 'A.8.22', title: 'جداسازی شبکه‌ها', status: 'not_assessed' }, { id: 'A.8.23', title: 'فیلتر کردن وب', status: 'not_assessed' } ] }, { title: 'توسعه امن', controls: [ { id: 'A.8.25', title: 'چرخه حیات توسعه امن', status: 'not_assessed' }, { id: 'A.8.26', title: 'الزامات امنیت برنامه کاربردی', status: 'not_assessed' }, { id: 'A.8.27', title: 'اصول معماری و مهندسی امن', status: 'not_assessed' }, { id: 'A.8.28', title: 'کدنویسی امن', status: 'not_assessed' }, { id: 'A.8.29', title: 'تست امنیت در توسعه و پذیرش', status: 'not_assessed' }, { id: 'A.8.30', title: 'برون‌سپاری توسعه', status: 'not_assessed' }, { id: 'A.8.31', title: 'جداسازی محیط‌های توسعه، تست و تولید', status: 'not_assessed' }, { id: 'A.8.32', title: 'مدیریت تغییر', status: 'not_assessed' }, { id: 'A.8.33', title: 'اطلاعات تست', status: 'not_assessed' }, { id: 'A.8.34', title: 'حفاظت از اطلاعات سیستم‌ها در هنگام تست', status: 'not_assessed' } ] } ] }
     ];
 
@@ -170,7 +220,7 @@ window.onload = () => { // FIX: Use window.onload to ensure Chart.js is loaded
     function loadState() {
         const savedData = localStorage.getItem(APP_STORAGE_KEY);
         assessmentData = savedData ? JSON.parse(savedData) : JSON.parse(JSON.stringify(defaultAssessmentData));
-        currentTheme = localStorage.getItem(THEME_STORAGE_KEY) || 'dark';
+        currentTheme = localStorage.getItem(THEME_STORAGE_KEY) || 'light';
     }
     
     // --- UI & RENDERING ---
@@ -191,7 +241,7 @@ window.onload = () => { // FIX: Use window.onload to ensure Chart.js is loaded
                 <div class="control-row rounded-md p-3 transition-colors duration-300" data-control-id="${control.id}" data-status="${control.status}">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
                         <div class="flex-grow flex items-center gap-x-3">
-                           <button class="gemini-btn p-1 rounded-full text-blue-400 hover:bg-blue-500/20" title="دریافت راهنمایی با هوش مصنوعی" data-control-id="${control.id}" data-control-title="${control.title}">
+                           <button class="guidance-btn p-1 rounded-full text-blue-400 hover:bg-blue-500/20" title="دریافت راهنمایی" data-control-id="${control.id}" data-control-title="${control.title}">
                                 ✨
                            </button>
                            <div class="control-text">
@@ -248,10 +298,10 @@ window.onload = () => { // FIX: Use window.onload to ensure Chart.js is loaded
             });
         });
 
-        document.querySelectorAll('.gemini-btn').forEach(btn => {
+        document.querySelectorAll('.guidance-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                const { controlId, controlTitle } = e.currentTarget.dataset;
-                showGuidanceModal(controlId, controlTitle);
+                const { controlId } = e.currentTarget.dataset;
+                showGuidanceModal(controlId);
             });
         });
     }
@@ -326,20 +376,37 @@ window.onload = () => { // FIX: Use window.onload to ensure Chart.js is loaded
         });
     }
 
-    // --- GEMINI MODAL ---
-    const modal = document.getElementById('gemini-modal');
-    const modalClose = document.getElementById('gemini-modal-close');
-    const modalSpinner = document.getElementById('gemini-spinner');
-    const modalResponse = document.getElementById('gemini-response');
+    // --- Guidance MODAL ---
+    const modal = document.getElementById('guidance-modal');
+    const modalClose = document.getElementById('guidance-modal-close');
+    const modalBody = document.getElementById('guidance-modal-body');
     
-    function showGuidanceModal(controlId, controlTitle) {
-        document.getElementById('gemini-modal-title').textContent = `✨ راهنمای کنترل ${controlId}`;
+    function showGuidanceModal(controlId) {
+        const guidance = controlGuidance[controlId];
+        if (!guidance) {
+            modalBody.innerHTML = `<p class="text-yellow-400">راهنمایی برای این کنترل هنوز اضافه نشده است.</p>`;
+        } else {
+             modalBody.innerHTML = `
+                <div class='space-y-4'>
+                    <div>
+                        <h4 class='font-bold text-lg'>شرح کنترل</h4>
+                        <p class='text-secondary'>${guidance.description}</p>
+                    </div>
+                    <div>
+                        <h4 class='font-bold text-lg'>راهنمای پیاده‌سازی</h4>
+                        <p class='text-secondary'>${guidance.implementation}</p>
+                    </div>
+                    <div>
+                        <h4 class='font-bold text-lg'>شواهد رایج برای ممیزی</h4>
+                        <p class='text-secondary'>${guidance.evidence}</p>
+                    </div>
+                </div>
+            `;
+        }
+        
+        document.getElementById('guidance-modal-title').textContent = `✨ راهنمای کنترل ${controlId}`;
         modal.classList.remove('hidden');
         modal.classList.add('flex');
-        modalSpinner.classList.remove('hidden');
-        modalResponse.classList.add('hidden');
-        modalResponse.innerHTML = '';
-        fetchGeminiGuidance(controlId, controlTitle);
     }
 
     function hideGuidanceModal() {
@@ -348,44 +415,6 @@ window.onload = () => { // FIX: Use window.onload to ensure Chart.js is loaded
     }
     modalClose.addEventListener('click', hideGuidanceModal);
     modal.addEventListener('click', (e) => { if(e.target === modal) hideGuidanceModal(); });
-
-    async function fetchGeminiGuidance(controlId, controlTitle) {
-        const prompt = `به عنوان یک مشاور ارشد و متخصص در پیاده‌سازی استاندارد ISO 27001، برای کنترل با شناسه "${controlId}" و عنوان "${controlTitle}"، لطفاً موارد زیر را به صورت واضح، کاربردی و در قالب Markdown ارائه دهید:
-        1. **شرح کنترل:** هدف و مفهوم این کنترل را به زبان ساده توضیح دهید.
-        2. **راهنمای پیاده‌سازی:** چند گام عملی و کلیدی برای پیاده‌سازی موفق این کنترل در یک سازمان معمولی پیشنهاد دهید.
-        3. **شواهد رایج برای ممیزی:** چند نمونه از مستندات و شواهدی که یک ممیز معمولاً برای بررسی این کنترل درخواست می‌کند را لیست کنید.
-        پاسخ شما باید کاملا به زبان فارسی باشد.`;
-
-        const apiKey = ""; // Leave empty for Canvas
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-        
-        try {
-            const response = await fetch(apiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-            });
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-            const result = await response.json();
-            
-            if (result.candidates && result.candidates.length > 0) {
-                const text = result.candidates[0].content.parts[0].text;
-                // Basic Markdown to HTML conversion
-                const htmlResponse = text
-                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                    .replace(/\n/g, '<br>');
-                modalResponse.innerHTML = htmlResponse;
-            } else {
-                throw new Error("پاسخ معتبری از هوش مصنوعی دریافت نشد.");
-            }
-        } catch (error) {
-            console.error("Gemini API Error:", error);
-            modalResponse.innerHTML = `<p class="text-red-400">خطا در دریافت اطلاعات. لطفاً دوباره تلاش کنید. (${error.message})</p>`;
-        } finally {
-            modalSpinner.classList.add('hidden');
-            modalResponse.classList.remove('hidden');
-        }
-    }
 
     // --- CHARTING ---
     function updateChartTheme() {
