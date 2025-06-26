@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ابزار نهایی تحلیل شکاف ISO 27001:2022</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts: Vazirmatn -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            /* Light Theme */
+            --bg-light: #f1f5f9; /* slate-100 */
+            --card-bg-light: rgba(255, 255, 255, 0.6);
+            --text-primary-light: #1e293b;
+            --text-secondary-light: #475569;
+            --border-light: rgba(255, 255, 255, 0.4);
+            --tool-btn-bg-light: #e2e8f0;
+            --tool-btn-hover-bg-light: #cbd5e1;
+            /* Dark Theme */
+            --bg-dark: #0f172a;
+            --card-bg-dark: #1e293b;
+            --text-primary-dark: #f1f5f9;
+            --text-secondary-dark: #94a3b8;
+            --border-dark: #334155;
+            --hover-bg-dark: #334155;
+            --tool-btn-bg-dark: #334155;
+            --tool-btn-hover-bg-dark: #475569;
+        }
+        body { font-family: 'Vazirmatn', sans-serif; transition: background-color 0.3s, color 0.3s; position: relative; }
+        
+        /* Background & Shapes */
+        .background-shapes { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; overflow: hidden; }
+        .shape { position: absolute; border-radius: 50%; background: linear-gradient(45deg, rgba(59, 130, 246, 0.2), rgba(139, 92, 246, 0.2)); animation: float 15s ease-in-out infinite alternate; }
+        .shape1 { width: 400px; height: 400px; top: -150px; right: -150px; }
+        .shape2 { width: 300px; height: 300px; bottom: -100px; left: -100px; animation-duration: 20s; }
+        @keyframes float { 0% { transform: translateY(0px) rotate(0deg); } 100% { transform: translateY(40px) rotate(45deg); } }
+        .theme-dark .background-shapes { display: none; }
+
+        .theme-light { background-color: var(--bg-light); color: var(--text-primary-light); }
+        .theme-dark { background-color: var(--bg-dark); color: var(--text-primary-dark); }
+        
+        .card { transition: background-color 0.3s, box-shadow 0.3s, border-color 0.3s; }
+        .theme-light .card {
+            background-color: var(--card-bg-light);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border-light);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
+        }
+        .theme-dark .card { background-color: var(--card-bg-dark); }
+        
+        .text-secondary { color: var(--text-secondary-light); }
+        .theme-dark .text-secondary { color: var(--text-secondary-dark); }
+        
+        .tab-button { padding: 0.5rem 1rem; border-radius: 0.5rem; transition: background-color 0.2s, color 0.2s; border: 2px solid transparent; }
+        .theme-light .tab-button { color: #475569; }
+        .theme-dark .tab-button { color: #94a3b8; }
+        .theme-light .tab-button:not(.active):hover { background-color: rgba(255,255,255,0.5); }
+        .theme-dark .tab-button:not(.active):hover { background-color: var(--hover-bg-dark); }
+        .tab-button.active { background-color: #3b82f6; color: white; font-weight: 600; }
+
+        details { background-color: var(--hover-bg-light); }
+        .theme-dark details { background-color: #334155; }
+        details > summary { list-style: none; }
+        details > summary::-webkit-details-marker { display: none; }
+
+        .tool-button { background-color: var(--tool-btn-bg-dark); }
+        .theme-light .tool-button { background-color: var(--tool-btn-bg-light); }
+        .tool-button:hover { background-color: var(--tool-btn-hover-bg-dark); }
+        .theme-light .tool-button:hover { background-color: var(--tool-btn-hover-bg-light); }
+        .tool-button.active { background-color: #3b82f6; color: white; }
+
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .spinner { animation: spin 1s linear infinite; }
+    </style>
+</head>
+<body class="p-4 sm:p-6 lg:p-8">
+    <div class="background-shapes">
+        <div class="shape shape1"></div>
+        <div class="shape shape2"></div>
+    </div>
+
+    <div class="max-w-7xl mx-auto">
+        <header class="mb-8 flex justify-between items-start">
+            <div class="flex items-center gap-x-5">
+                <div id="main-icon-container" class="flex-shrink-0 w-16 h-16 flex items-center justify-center rounded-full bg-blue-500/10 text-blue-500"></div>
+                <div>
+                    <h1 id="main-title" class="text-2xl sm:text-3xl font-bold"></h1>
+                    <p id="main-subtitle" class="text-secondary"></p>
+                </div>
+            </div>
+            <button id="theme-toggle" class="p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                <svg id="sun-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                <svg id="moon-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+            </button>
+        </header>
+
+        <div class="mb-8 overflow-x-auto"><div id="tabs" class="flex p-1 space-x-2 space-x-reverse rounded-xl">
+                 <button data-tab-target="dashboard" class="tab-button active">داشبورد</button>
+                <button data-tab-target="mandatory" class="tab-button">الزامات (۴ تا ۱۰)</button>
+                <button data-tab-target="annexA5" class="tab-button">A.5 سازمانی</button>
+                <button data-tab-target="annexA6" class="tab-button">A.6 فردی</button>
+                <button data-tab-target="annexA7" class="tab-button">A.7 فیزیکی</button>
+                <button data-tab-target="annexA8" class="tab-button">A.8 فناوری</button>
+        </div></div>
+
+        <div id="content-container">
+            <main id="dashboard-content" class="tab-content grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-1 flex flex-col gap-6"><div class="card p-6 rounded-xl flex flex-col items-center justify-center flex-1"><h2 class="text-xl font-bold mb-4 text-center">انطباق کلی</h2><div class="relative w-48 h-48 sm:w-56 sm:h-56"><canvas id="overallComplianceChart"></canvas><div class="absolute inset-0 flex items-center justify-center"><span id="overallComplianceText" class="text-4xl sm:text-5xl font-bold text-blue-500">0%</span></div></div></div><div class="card p-6 rounded-xl flex flex-col items-center justify-center flex-1"><h2 class="text-xl font-bold mb-4 text-center">پیشرفت کلی ارزیابی</h2><div class="relative w-48 h-48 sm:w-56 sm:h-56"><canvas id="dashboardOverallProgressChart"></canvas><div class="absolute inset-0 flex items-center justify-center"><span id="dashboardOverallProgressText" class="text-4xl sm:text-5xl font-bold text-green-500">0%</span></div></div></div></div>
+                <div class="lg:col-span-2 flex flex-col gap-6"><div class="card p-6 rounded-xl"><h2 class="text-xl font-bold mb-2">نمای کلی انطباق</h2><div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-6"><div class="w-full h-64 relative"><canvas id="complianceByTypeChart"></canvas></div><div class="w-full h-64 relative"><canvas id="complianceByStatusChart"></canvas></div></div></div><div class="card p-6 rounded-xl flex-1 flex flex-col"><h2 class="text-xl font-bold mb-2">انطباق بر اساس بخش</h2><div class="relative mt-6 flex-grow" style="min-height: 280px;"><canvas id="complianceBySectionChart"></canvas></div></div></div>
+                <div class="lg:col-span-3 card p-6 rounded-xl"><h2 class="text-xl font-bold mb-6 text-center">انطباق بر اساس حوزه‌های کنترلی</h2><div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"><div class="flex flex-col items-center gap-2"><div class="relative w-36 h-36"><canvas id="annexA5Chart"></canvas><div class="absolute inset-0 flex items-center justify-center"><span id="annexA5Text" class="text-2xl font-bold text-blue-500">0%</span></div></div><p class="font-semibold">A.5 سازمانی</p></div><div class="flex flex-col items-center gap-2"><div class="relative w-36 h-36"><canvas id="annexA6Chart"></canvas><div class="absolute inset-0 flex items-center justify-center"><span id="annexA6Text" class="text-2xl font-bold text-blue-500">0%</span></div></div><p class="font-semibold">A.6 فردی</p></div><div class="flex flex-col items-center gap-2"><div class="relative w-36 h-36"><canvas id="annexA7Chart"></canvas><div class="absolute inset-0 flex items-center justify-center"><span id="annexA7Text" class="text-2xl font-bold text-blue-500">0%</span></div></div><p class="font-semibold">A.7 فیزیکی</p></div><div class="flex flex-col items-center gap-2"><div class="relative w-36 h-36"><canvas id="annexA8Chart"></canvas><div class="absolute inset-0 flex items-center justify-center"><span id="annexA8Text" class="text-2xl font-bold text-blue-500">0%</span></div></div><p class="font-semibold">A.8 فناوری</p></div></div></div>
+            </main>
+            
+            <div id="questionnaire-wrapper" class="tab-content hidden">
+                 <div class="card questionnaire-bg p-6 rounded-xl">
+                    <div class="space-y-6"><div><h2 class="text-lg font-bold mb-2">پیشرفت کلی ارزیابی</h2><div class="w-full rounded-full h-2.5 bg-slate-700"><div id="overall-progress-bar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div></div><p id="overall-progress-text" class="text-center text-sm text-secondary mt-2"></p></div><div><h2 class="text-lg font-bold mb-2">پیشرفت بخش جاری</h2><div class="w-full rounded-full h-2.5 bg-slate-700"><div id="section-progress-bar" class="bg-green-600 h-2.5 rounded-full" style="width: 0%"></div></div><p id="section-progress-text" class="text-center text-sm text-secondary mt-2"></p></div></div>
+                    <div class="my-6 grid grid-cols-1 sm:grid-cols-2 gap-4"><input type="search" id="search-box" placeholder="جستجو در کنترل‌ها..." class="w-full p-2 rounded-md border focus:ring-blue-500 focus:border-blue-500"><div class="flex items-center justify-end gap-2"><button id="filter-unanswered-btn" title="نمایش پاسخ‌داده‌نشده‌ها" class="tool-button p-2 rounded-md transition-colors"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L12 11.414V15a1 1 0 01-.293.707l-2 2A1 1 0 018 17v-5.586L3.293 6.707A1 1 0 013 6V3z" clip-rule="evenodd" /></svg></button><button id="toggle-all-btn" title="باز/بسته کردن همه" class="tool-button p-2 rounded-md transition-colors"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" /></svg></button><button id="reset-page-btn" title="بازنشانی پاسخ‌های این صفحه" class="tool-button p-2 rounded-md transition-colors text-red-500"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd" /></svg></button></div></div>
+                    <div id="accordion-container" class="space-y-4"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Gemini Modal -->
+    <div id="gemini-modal" class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center p-4 z-50">
+        <div id="gemini-modal-content" class="card rounded-xl p-6 w-full max-w-2xl max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center mb-4"><h3 id="gemini-modal-title" class="text-xl font-bold"></h3><button id="gemini-modal-close" class="p-2 rounded-full hover:bg-slate-500/20">&times;</button></div>
+            <div id="gemini-modal-body" class="overflow-y-auto space-y-4 prose prose-invert"><div id="gemini-spinner" class="flex justify-center items-center py-10"><svg class="spinner h-8 w-8 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></div><div id="gemini-response" class="hidden"></div></div>
+        </div>
+    </div>
+
+<script>
+window.onload = () => { // FIX: Use window.onload to ensure Chart.js is loaded
+    const APP_STORAGE_KEY = 'iso27001-assessment-data-v6';
+    const THEME_STORAGE_KEY = 'iso27001-theme';
+    let currentTheme = 'dark';
+    let isFilterActive = false;
+
+    // ... (pageInfo and defaultAssessmentData remain the same) ...
+    const pageInfo = { dashboard: { title: 'داشبورد تحلیل شکاف ISO 27001', description: 'نمای کلی از وضعیت انطباق و پیشرفت ارزیابی', icon: `<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>` }, mandatory: { title: 'الزامات استاندارد (بندهای ۴ تا ۱۰)', description: 'این بخش شامل بندهای الزامی استاندارد است که چارچوب اصلی سیستم مدیریت امنیت اطلاعات (ISMS) را تشکیل می‌دهند.', icon: `<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>` }, annexA5: { title: 'کنترل‌های سازمانی (پیوست A.5)', description: 'این کنترل‌ها به خط‌مشی‌ها، فرآیندها و ساختارهای سازمانی برای مدیریت امنیت اطلاعات می‌پردازند.', icon: `<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>` }, annexA6: { title: 'کنترل‌های فردی (پیوست A.6)', description: 'این کنترل‌ها بر جنبه‌های انسانی امنیت اطلاعات، از جمله فرآیندهای قبل، حین و بعد از استخدام تمرکز دارند.', icon: `<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>` }, annexA7: { title: 'کنترل‌های فیزیکی (پیوست A.7)', description: 'این کنترل‌ها به حفاظت فیزیکی از دارایی‌های اطلاعاتی سازمان در برابر دسترسی غیرمجاز، آسیب و تداخل می‌پردازند.', icon: `<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>` }, annexA8: { title: 'کنترل‌های فناوری (پیوست A.8)', description: 'این کنترل‌ها به حفاظت از اطلاعات در شبکه‌ها و سیستم‌ها، از جمله مدیریت آسیب‌پذیری، رمزنگاری و امنیت توسعه نرم‌افزار مربوط می‌شوند.', icon: `<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" /></svg>` }, };
+    const defaultAssessmentData = [ { id: 'clause-4', title: 'بند ۴: زمینه سازمان', type: 'mandatory', controls: [ { id: '4.1', title: 'درک سازمان و زمینه آن', status: 'not_assessed' }, { id: '4.2', title: 'درک نیازها و انتظارات طرف‌های ذینفع', status: 'not_assessed' }, { id: '4.3', title: 'تعیین دامنه سیستم مدیریت امنیت اطلاعات', status: 'not_assessed' }, { id: '4.4', title: 'سیستم مدیریت امنیت اطلاعات', status: 'not_assessed' } ] }, { id: 'clause-5', title: 'بند ۵: رهبری', type: 'mandatory', controls: [ { id: '5.1', title: 'رهبری و تعهد', status: 'not_assessed' }, { id: '5.2', title: 'خط‌مشی', status: 'not_assessed' }, { id: '5.3', title: 'نقش‌ها، مسئولیت‌ها و اختیارات سازمانی', status: 'not_assessed' } ] }, { id: 'clause-6', title: 'بند ۶: برنامه‌ریزی', type: 'mandatory', controls: [ { id: '6.1', title: 'اقدامات برای رسیدگی به ریسک‌ها و فرصت‌ها', status: 'not_assessed' }, { id: '6.2', title: 'اهداف امنیت اطلاعات و برنامه‌ریزی برای دستیابی به آنها', status: 'not_assessed' }, { id: '6.3', title: 'برنامه‌ریزی تغییرات', status: 'not_assessed' } ] }, { id: 'clause-7', title: 'بند ۷: پشتیبانی', type: 'mandatory', controls: [ { id: '7.1', title: 'منابع', status: 'not_assessed' }, { id: '7.2', title: 'صلاحیت', status: 'not_assessed' }, { id: '7.3', title: 'آگاهی', status: 'not_assessed' }, { id: '7.4', title: 'ارتباطات', status: 'not_assessed' }, { id: '7.5', title: 'اطلاعات مستند', status: 'not_assessed' } ] }, { id: 'clause-8', title: 'بند ۸: عملیات', type: 'mandatory', controls: [ { id: '8.1', title: 'برنامه‌ریزی و کنترل عملیاتی', status: 'not_assessed' }, { id: '8.2', title: 'ارزیابی ریسک امنیت اطلاعات', status: 'not_assessed' }, { id: '8.3', title: 'برخورد با ریسک امنیت اطلاعات', status: 'not_assessed' } ] }, { id: 'clause-9', title: 'بند ۹: ارزیابی عملکرد', type: 'mandatory', controls: [ { id: '9.1', title: 'پایش، اندازه‌گیری، تحلیل و ارزیابی', status: 'not_assessed' }, { id: '9.2', title: 'ممیزی داخلی', status: 'not_assessed' }, { id: '9.3', title: 'بازنگری مدیریت', status: 'not_assessed' } ] }, { id: 'clause-10', title: 'بند ۱۰: بهبود', type: 'mandatory', controls: [ { id: '10.1', title: 'بهبود مداوم', status: 'not_assessed' }, { id: '10.2', title: 'عدم انطباق و اقدام اصلاحی', status: 'not_assessed' } ] }, { id: 'annex-a5', title: 'A.5: کنترل‌های سازمانی', type: 'annexA', subCategories: [ { title: 'سیاست‌گذاری و حاکمیت', controls: [ { id: 'A.5.1', title: 'خط‌مشی‌های امنیت اطلاعات', status: 'not_assessed' }, { id: 'A.5.2', title: 'نقش‌ها و مسئولیت‌های امنیت اطلاعات', status: 'not_assessed' }, { id: 'A.5.3', title: 'تفکیک وظایف', status: 'not_assessed' }, { id: 'A.5.4', title: 'مسئولیت‌های مدیریت', status: 'not_assessed' }, { id: 'A.5.36', title: 'انطباق با خط‌مشی‌ها، قوانین و استانداردهای امنیت اطلاعات', status: 'not_assessed' } ] }, { title: 'مدیریت دارایی و اطلاعات', controls: [ { id: 'A.5.9', title: 'فهرست اموال اطلاعات و سایر دارایی‌های مرتبط', status: 'not_assessed' }, { id: 'A.5.10', title: 'استفاده قابل قبول از اطلاعات و سایر دارایی‌های مرتبط', status: 'not_assessed' }, { id: 'A.5.11', title: 'بازگرداندن دارایی‌ها', status: 'not_assessed' }, { id: 'A.5.12', title: 'طبقه‌بندی اطلاعات', status: 'not_assessed' }, { id: 'A.5.13', title: 'برچسب‌گذاری اطلاعات', status: 'not_assessed' }, { id: 'A.5.14', title: 'انتقال اطلاعات', status: 'not_assessed' } ] }, { title: 'کنترل دسترسی', controls: [ { id: 'A.5.15', title: 'کنترل دسترسی', status: 'not_assessed' }, { id: 'A.5.16', title: 'مدیریت هویت', status: 'not_assessed' }, { id: 'A.5.17', title: 'اطلاعات احراز هویت', status: 'not_assessed' }, { id: 'A.5.18', title: 'حقوق دسترسی', status: 'not_assessed' } ] }, { title: 'روابط خارجی و پروژه', controls: [ { id: 'A.5.5', title: 'تماس با مراجع ذی‌صلاح', status: 'not_assessed' }, { id: 'A.5.6', title: 'تماس با گروه‌های ذی‌نفع خاص', status: 'not_assessed' }, { id: 'A.5.7', title: 'هوشمندی تهدیدات', status: 'not_assessed' }, { id: 'A.5.8', title: 'امنیت اطلاعات در مدیریت پروژه', status: 'not_assessed' } ] }, { title: 'روابط با تامین‌کنندگان', controls: [ { id: 'A.5.19', title: 'امنیت اطلاعات در روابط با تامین‌کننده', status: 'not_assessed' }, { id: 'A.5.20', title: 'رسیدگی به امنیت اطلاعات در توافق‌نامه‌های تامین‌کننده', status: 'not_assessed' }, { id: 'A.5.21', title: 'مدیریت امنیت اطلاعات در زنجیره تامین ICT', status: 'not_assessed' }, { id: 'A.5.22', title: 'پایش، بازبینی و مدیریت تغییر خدمات تامین‌کننده', status: 'not_assessed' }, { id: 'A.5.23', title: 'امنیت اطلاعات برای استفاده از خدمات ابری', status: 'not_assessed' } ] }, { title: 'مدیریت رخداد و تداوم کسب و کار', controls: [ { id: 'A.5.24', title: 'برنامه‌ریزی و آمادگی مدیریت رخداد امنیت اطلاعات', status: 'not_assessed' }, { id: 'A.5.25', title: 'ارزیابی و تصمیم‌گیری در مورد رخدادهای امنیت اطلاعات', status: 'not_assessed' }, { id: 'A.5.26', title: 'پاسخ به رخدادهای امنیت اطلاعات', status: 'not_assessed' }, { id: 'A.5.27', title: 'یادگیری از رخدادهای امنیت اطلاعات', status: 'not_assessed' }, { id: 'A.5.28', title: 'جمع‌آوری شواهد', status: 'not_assessed' }, { id: 'A.5.29', title: 'امنیت اطلاعات در هنگام اختلال', status: 'not_assessed' }, { id: 'A.5.30', title: 'آمادگی ICT برای تداوم کسب و کار', status: 'not_assessed' } ] }, { title: 'الزامات و انطباق', controls: [ { id: 'A.5.31', title: 'شناسایی الزامات قانونی، مقرراتی و قراردادی', status: 'not_assessed' }, { id: 'A.5.32', title: 'حقوق مالکیت معنوی', status: 'not_assessed' }, { id: 'A.5.33', title: 'حفاظت از سوابق', status: 'not_assessed' }, { id: 'A.5.34', title: 'حریم خصوصی و حفاظت از اطلاعات شناسایی شخصی (PII)', status: 'not_assessed' }, { id: 'A.5.35', title: 'بازبینی مستقل امنیت اطلاعات', status: 'not_assessed' }, { id: 'A.5.37', title: 'روش‌های عملیاتی مستند', status: 'not_assessed' } ] }, ] }, { id: 'annex-a6', title: 'A.6: کنترل‌های فردی', type: 'annexA', controls: [ { id: 'A.6.1', title: 'غربالگری', status: 'not_assessed' }, { id: 'A.6.2', title: 'شرایط و ضوابط استخدام', status: 'not_assessed' }, { id: 'A.6.3', title: 'آگاهی، آموزش و پرورش امنیت اطلاعات', status: 'not_assessed' }, { id: 'A.6.4', title: 'فرآیند انضباطی', status: 'not_assessed' }, { id: 'A.6.5', title: 'مسئولیت‌ها پس از خاتمه یا تغییر شغل', status: 'not_assessed' }, { id: 'A.6.6', title: 'توافق‌نامه‌های محرمانگی یا عدم افشا', status: 'not_assessed' }, { id: 'A.6.7', title: 'کار از راه دور', status: 'not_assessed' }, { id: 'A.6.8', title: 'گزارش‌دهی رخداد امنیت اطلاعات', status: 'not_assessed' } ] }, { id: 'annex-a7', title: 'A.7: کنترل‌های فیزیکی', type: 'annexA', controls: [ { id: 'A.7.1', title: 'پیرامون‌های امنیتی فیزیکی', status: 'not_assessed' }, { id: 'A.7.2', title: 'ورود فیزیکی', status: 'not_assessed' }, { id: 'A.7.3', title: 'ایمن‌سازی دفاتر، اتاق‌ها و امکانات', status: 'not_assessed' }, { id: 'A.7.4', title: 'پایش امنیت فیزیکی', status: 'not_assessed' }, { id: 'A.7.5', title: 'حفاظت در برابر تهدیدات فیزیکی و محیطی', status: 'not_assessed' }, { id: 'A.7.6', title: 'کار در مناطق امن', status: 'not_assessed' }, { id: 'A.7.7', title: 'میز پاک و صفحه پاک', status: 'not_assessed' }, { id: 'A.7.8', title: 'قراردادن و حفاظت از تجهیزات', status: 'not_assessed' }, { id: 'A.7.9', 'title': 'امنیت دارایی‌ها در خارج از محل', status: 'not_assessed' }, { id: 'A.7.10', title: 'رسانه‌های ذخیره‌سازی', status: 'not_assessed' }, { id: 'A.7.11', title: 'پشتیبانی از تاسیسات', status: 'not_assessed' }, { id: 'A.7.12', title: 'امنیت کابل‌کشی', status: 'not_assessed' }, { id: 'A.7.13', title: 'نگهداری تجهیزات', status: 'not_assessed' }, { id: 'A.7.14', title: 'دفع امن دارایی‌ها', status: 'not_assessed' } ] }, { id: 'annex-a8', title: 'A.8: کنترل‌های فناوری', type: 'annexA', subCategories: [ { title: 'نقاط پایانی و دسترسی امن', controls: [ { id: 'A.8.1', title: 'تجهیزات کاربر نهایی', status: 'not_assessed' }, { id: 'A.8.2', title: 'حقوق دسترسی ممتاز', status: 'not_assessed' }, { id: 'A.8.3', title: 'محدودیت دسترسی به اطلاعات', status: 'not_assessed' }, { id: 'A.8.4', title: 'دسترسی به کد منبع', status: 'not_assessed' }, { id: 'A.8.5', title: 'احراز هویت امن', status: 'not_assessed' }, { id: 'A.8.18', title: 'استفاده از ابزارهای مدیریتی ممتاز', status: 'not_assessed' } ] }, { title: 'مدیریت زیرساخت و پلتفرم', controls: [ { id: 'A.8.6', title: 'مدیریت ظرفیت', status: 'not_assessed' }, { id: 'A.8.7', title: 'حفاظت در برابر بدافزار', status: 'not_assessed' }, { id: 'A.8.8', title: 'مدیریت آسیب‌پذیری‌های فنی', status: 'not_assessed' }, { id: 'A.8.9', title: 'مدیریت پیکربندی', status: 'not_assessed' }, { id: 'A.8.19', title: 'نصب نرم‌افزار بر روی سیستم‌های عملیاتی', status: 'not_assessed' } ] }, { title: 'حفاظت از داده‌ها', controls: [ { id: 'A.8.10', title: 'حذف اطلاعات', status: 'not_assessed' }, { id: 'A.8.11', title: 'ماسک کردن داده‌ها', status: 'not_assessed' }, { id: 'A.8.12', title: 'جلوگیری از نشت داده‌ها', status: 'not_assessed' }, { id: 'A.8.13', title: 'پشتیبان‌گیری اطلاعات', status: 'not_assessed' }, { id: 'A.8.14', title: 'تکرارپذیری اطلاعات', status: 'not_assessed' }, { id: 'A.8.24', title: 'استفاده از رمزنگاری', status: 'not_assessed' } ] }, { title: 'پایش و ثبت وقایع', controls: [ { id: 'A.8.15', title: 'ثبت وقایع (Logging)', status: 'not_assessed' }, { id: 'A.8.16', title: 'پایش فعالیت‌ها', status: 'not_assessed' }, { id: 'A.8.17', title: 'همگام‌سازی ساعت', status: 'not_assessed' } ] }, { title: 'امنیت شبکه', controls: [ { id: 'A.8.20', title: 'امنیت شبکه', status: 'not_assessed' }, { id: 'A.8.21', title: 'امنیت خدمات شبکه', status: 'not_assessed' }, { id: 'A.8.22', title: 'جداسازی شبکه‌ها', status: 'not_assessed' }, { id: 'A.8.23', title: 'فیلتر کردن وب', status: 'not_assessed' } ] }, { title: 'توسعه امن', controls: [ { id: 'A.8.25', title: 'چرخه حیات توسعه امن', status: 'not_assessed' }, { id: 'A.8.26', title: 'الزامات امنیت برنامه کاربردی', status: 'not_assessed' }, { id: 'A.8.27', title: 'اصول معماری و مهندسی امن', status: 'not_assessed' }, { id: 'A.8.28', title: 'کدنویسی امن', status: 'not_assessed' }, { id: 'A.8.29', title: 'تست امنیت در توسعه و پذیرش', status: 'not_assessed' }, { id: 'A.8.30', title: 'برون‌سپاری توسعه', status: 'not_assessed' }, { id: 'A.8.31', title: 'جداسازی محیط‌های توسعه، تست و تولید', status: 'not_assessed' }, { id: 'A.8.32', title: 'مدیریت تغییر', status: 'not_assessed' }, { id: 'A.8.33', title: 'اطلاعات تست', status: 'not_assessed' }, { id: 'A.8.34', title: 'حفاظت از اطلاعات سیستم‌ها در هنگام تست', status: 'not_assessed' } ] } ] }
+    ];
+
+    let assessmentData = [];
+    let chartInstances = {};
+
+    // --- THEME MANAGEMENT ---
+    const themeToggle = document.getElementById('theme-toggle');
+    const sunIcon = document.getElementById('sun-icon');
+    const moonIcon = document.getElementById('moon-icon');
+
+    function applyTheme(theme, updateCharts = true) {
+        currentTheme = theme;
+        if (theme === 'light') { document.body.classList.remove('theme-dark'); document.body.classList.add('theme-light'); sunIcon.classList.add('hidden'); moonIcon.classList.remove('hidden'); } 
+        else { document.body.classList.remove('theme-light'); document.body.classList.add('theme-dark'); sunIcon.classList.remove('hidden'); moonIcon.classList.add('hidden'); }
+        localStorage.setItem(THEME_STORAGE_KEY, theme);
+        if(updateCharts) updateChartTheme();
+    }
+    themeToggle.addEventListener('click', () => applyTheme(currentTheme === 'light' ? 'dark' : 'light'));
+
+    // --- STATE & DATA MANAGEMENT ---
+    function saveState() { localStorage.setItem(APP_STORAGE_KEY, JSON.stringify(assessmentData)); }
+    function loadState() {
+        const savedData = localStorage.getItem(APP_STORAGE_KEY);
+        assessmentData = savedData ? JSON.parse(savedData) : JSON.parse(JSON.stringify(defaultAssessmentData));
+        currentTheme = localStorage.getItem(THEME_STORAGE_KEY) || 'dark';
+    }
+    
+    // --- UI & RENDERING ---
+    function getSectionsByTarget(target) {
+        if (target === 'mandatory') return assessmentData.filter(s => s.type === 'mandatory');
+        return assessmentData.filter(s => s.id === `annex-${target.substring(5).toLowerCase()}`);
+    }
+
+    function renderQuestionnaire(target) {
+        const container = document.getElementById('accordion-container');
+        container.innerHTML = '';
+        const dataToRender = getSectionsByTarget(target);
+        const statusLabels = { fully_compliant: 'کاملاً منطبق', partially_compliant: 'تا حدی منطبق', not_compliant: 'منطبق نیست', not_applicable: 'مربوط نیست' };
+        const statusTextColors = { fully_compliant: 'text-blue-400', partially_compliant: 'text-yellow-400', not_compliant: 'text-red-400', not_applicable: 'text-slate-400' };
+        
+        const renderControls = (controls, sectionId) => {
+            return controls.map(control => `
+                <div class="control-row rounded-md p-3 transition-colors duration-300" data-control-id="${control.id}" data-status="${control.status}">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+                        <div class="flex-grow flex items-center gap-x-3">
+                           <button class="gemini-btn p-1 rounded-full text-blue-400 hover:bg-blue-500/20" title="دریافت راهنمایی با هوش مصنوعی" data-control-id="${control.id}" data-control-title="${control.title}">
+                                ✨
+                           </button>
+                           <div class="control-text">
+                                <p class="font-medium">${control.id}</p>
+                                <p class="text-sm text-secondary">${control.title}</p>
+                           </div>
+                        </div>
+                        <div class="flex items-center justify-end flex-wrap gap-x-2 gap-y-2">
+                            ${Object.keys(statusLabels).map(statusValue => `
+                            <label class="flex items-center space-x-2 space-x-reverse cursor-pointer p-2 rounded-md">
+                                <input type="radio" name="${control.id}" value="${statusValue}" class="form-radio bg-transparent border-slate-600 focus:ring-0" data-section-id="${sectionId}" data-control-id="${control.id}" ${control.status === statusValue ? 'checked' : ''}>
+                                <span class="text-sm font-semibold ${statusTextColors[statusValue]}">${statusLabels[statusValue]}</span>
+                            </label>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>`).join('');
+        };
+
+        dataToRender.forEach(section => {
+            let content;
+            if (section.subCategories) {
+                content = section.subCategories.map(sub => `
+                    <details class="accordion-item rounded-lg overflow-hidden mb-4" open>
+                        <summary class="flex justify-between items-center p-4 cursor-pointer font-semibold">${sub.title}</summary>
+                        <div class="p-4 border-t">${renderControls(sub.controls, section.id)}</div>
+                    </details>`).join('');
+            } else {
+                content = `<details class="accordion-item rounded-lg overflow-hidden" open>
+                                <summary class="flex justify-between items-center p-4 cursor-pointer font-semibold">${section.title}</summary>
+                                <div class="p-4 border-t">${renderControls(section.controls, section.id)}</div>
+                           </details>`;
+            }
+            container.insertAdjacentHTML('beforeend', content);
+        });
+
+        addControlActionListeners();
+        assessmentData.forEach(s => {
+            const controls = s.controls || [].concat(...(s.subCategories || []).map(sc => sc.controls));
+            controls.forEach(c => updateRowVisual(c.id, c.status));
+        });
+    }
+    
+    function addControlActionListeners() {
+         document.querySelectorAll('input[type="radio"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                const section = assessmentData.find(s => s.id === e.target.dataset.sectionId);
+                const controls = section.controls || [].concat(...(section.subCategories || []).map(sc => sc.controls));
+                const control = controls.find(c => c.id === e.target.dataset.controlId);
+                control.status = e.target.value;
+                updateRowVisual(control.id, e.target.value);
+                runAllUpdates();
+                saveState();
+            });
+        });
+
+        document.querySelectorAll('.gemini-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const { controlId, controlTitle } = e.currentTarget.dataset;
+                showGuidanceModal(controlId, controlTitle);
+            });
+        });
+    }
+
+    function updateHeader(targetId) {
+        const info = pageInfo[targetId];
+        document.getElementById('main-icon-container').innerHTML = info.icon;
+        document.getElementById('main-title').textContent = info.title;
+        document.getElementById('main-subtitle').textContent = info.description;
+    }
+
+    function handleTabClick(e) {
+        const targetTab = e.currentTarget;
+        const targetId = targetTab.dataset.tabTarget;
+        document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+        targetTab.classList.add('active');
+        updateHeader(targetId);
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
+        if (targetId === 'dashboard') {
+            document.getElementById('dashboard-content').classList.remove('hidden');
+        } else {
+            document.getElementById('questionnaire-wrapper').classList.remove('hidden');
+            renderQuestionnaire(targetId);
+            updateSectionProgress(targetId); 
+        }
+        document.getElementById('search-box').value = '';
+        isFilterActive = false;
+        document.getElementById('filter-unanswered-btn').classList.remove('active');
+        updateQuestionnaireVisibility();
+    }
+
+    document.querySelectorAll('.tab-button').forEach(btn => btn.addEventListener('click', handleTabClick));
+    
+    function updateRowVisual(controlId, status) {
+        const row = document.querySelector(`[data-control-id="${controlId}"]`);
+        if (!row) return;
+        row.dataset.status = status;
+        const statusLightColors = { fully_compliant: 'bg-blue-100/50', partially_compliant: 'bg-yellow-100/50', not_compliant: 'bg-red-100/50', not_applicable: 'bg-slate-200/50', not_assessed: '' };
+        const statusDarkColors = { fully_compliant: 'bg-blue-900/30', partially_compliant: 'bg-yellow-900/30', not_compliant: 'bg-red-900/30', not_applicable: 'bg-slate-600/20', not_assessed: '' };
+        const colors = currentTheme === 'light' ? statusLightColors : statusDarkColors;
+        Object.values(statusLightColors).forEach(c => c && row.classList.remove(c));
+        Object.values(statusDarkColors).forEach(c => c && row.classList.remove(c));
+        if (colors[status]) row.classList.add(colors[status]);
+    }
+
+    // --- TOOLBAR ---
+    document.getElementById('search-box').addEventListener('input', () => updateQuestionnaireVisibility());
+    document.getElementById('filter-unanswered-btn').addEventListener('click', (e) => { isFilterActive = !isFilterActive; e.currentTarget.classList.toggle('active', isFilterActive); updateQuestionnaireVisibility(); });
+    document.getElementById('toggle-all-btn').addEventListener('click', () => { const accordions = document.querySelectorAll('.accordion-item'); const isAnyOpen = Array.from(accordions).some(acc => acc.open); accordions.forEach(acc => acc.open = !isAnyOpen); });
+    document.getElementById('reset-page-btn').addEventListener('click', () => {
+        if (!confirm('آیا از بازنشانی تمام پاسخ‌های این صفحه مطمئن هستید؟ این عمل غیرقابل بازگشت است.')) return;
+        const activeTabId = document.querySelector('.tab-button.active')?.dataset.tabTarget;
+        if (!activeTabId || activeTabId === 'dashboard') return;
+        const sectionsToReset = getSectionsByTarget(activeTabId);
+        sectionsToReset.forEach(section => {
+            const controls = section.controls || [].concat(...(section.subCategories || []).map(sc => sc.controls));
+            controls.forEach(control => { control.status = 'not_assessed'; });
+        });
+        renderQuestionnaire(activeTabId);
+        runAllUpdates();
+        saveState();
+    });
+    
+    function updateQuestionnaireVisibility() {
+        const query = document.getElementById('search-box').value.toLowerCase().trim();
+        document.querySelectorAll('.control-row').forEach(row => {
+            const text = row.querySelector('.control-text').textContent.toLowerCase();
+            const status = row.dataset.status;
+            const matchesSearch = text.includes(query);
+            const matchesFilter = !isFilterActive || status === 'not_assessed';
+            row.style.display = (matchesSearch && matchesFilter) ? '' : 'none';
+        });
+    }
+
+    // --- GEMINI MODAL ---
+    const modal = document.getElementById('gemini-modal');
+    const modalClose = document.getElementById('gemini-modal-close');
+    const modalSpinner = document.getElementById('gemini-spinner');
+    const modalResponse = document.getElementById('gemini-response');
+    
+    function showGuidanceModal(controlId, controlTitle) {
+        document.getElementById('gemini-modal-title').textContent = `✨ راهنمای کنترل ${controlId}`;
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        modalSpinner.classList.remove('hidden');
+        modalResponse.classList.add('hidden');
+        modalResponse.innerHTML = '';
+        fetchGeminiGuidance(controlId, controlTitle);
+    }
+
+    function hideGuidanceModal() {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+    modalClose.addEventListener('click', hideGuidanceModal);
+    modal.addEventListener('click', (e) => { if(e.target === modal) hideGuidanceModal(); });
+
+    async function fetchGeminiGuidance(controlId, controlTitle) {
+        const prompt = `به عنوان یک مشاور ارشد و متخصص در پیاده‌سازی استاندارد ISO 27001، برای کنترل با شناسه "${controlId}" و عنوان "${controlTitle}"، لطفاً موارد زیر را به صورت واضح، کاربردی و در قالب Markdown ارائه دهید:
+        1. **شرح کنترل:** هدف و مفهوم این کنترل را به زبان ساده توضیح دهید.
+        2. **راهنمای پیاده‌سازی:** چند گام عملی و کلیدی برای پیاده‌سازی موفق این کنترل در یک سازمان معمولی پیشنهاد دهید.
+        3. **شواهد رایج برای ممیزی:** چند نمونه از مستندات و شواهدی که یک ممیز معمولاً برای بررسی این کنترل درخواست می‌کند را لیست کنید.
+        پاسخ شما باید کاملا به زبان فارسی باشد.`;
+
+        const apiKey = ""; // Leave empty for Canvas
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+        
+        try {
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+            });
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            const result = await response.json();
+            
+            if (result.candidates && result.candidates.length > 0) {
+                const text = result.candidates[0].content.parts[0].text;
+                // Basic Markdown to HTML conversion
+                const htmlResponse = text
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\n/g, '<br>');
+                modalResponse.innerHTML = htmlResponse;
+            } else {
+                throw new Error("پاسخ معتبری از هوش مصنوعی دریافت نشد.");
+            }
+        } catch (error) {
+            console.error("Gemini API Error:", error);
+            modalResponse.innerHTML = `<p class="text-red-400">خطا در دریافت اطلاعات. لطفاً دوباره تلاش کنید. (${error.message})</p>`;
+        } finally {
+            modalSpinner.classList.add('hidden');
+            modalResponse.classList.remove('hidden');
+        }
+    }
+
+    // --- CHARTING ---
+    function updateChartTheme() {
+        if (typeof Chart === 'undefined') return;
+        const isDark = currentTheme === 'dark';
+        const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+        const textColor = isDark ? '#94a3b8' : '#64748b';
+        const remainingColor = isDark ? '#334155' : '#e2e8f0';
+        Chart.defaults.color = textColor;
+        Object.values(chartInstances).forEach(chart => {
+            if (chart.canvas.id === 'dashboardOverallProgressChart') chart.data.datasets[0].backgroundColor[1] = remainingColor;
+            ['annexA5Chart', 'annexA6Chart', 'annexA7Chart', 'annexA8Chart'].forEach(id => { if (chart.canvas.id === id) chart.data.datasets[0].backgroundColor[1] = remainingColor; });
+            if (chart.options.scales) {
+                if (chart.options.scales.x) { chart.options.scales.x.grid.color = gridColor; chart.options.scales.x.ticks.color = textColor; }
+                if (chart.options.scales.y) { chart.options.scales.y.grid.color = gridColor; chart.options.scales.y.ticks.color = textColor; }
+            }
+            chart.update();
+        });
+    }
+    
+    function initializeCharts() {
+        Object.values(chartInstances).forEach(chart => chart.destroy()); 
+        chartInstances = {};
+        const isDark = currentTheme === 'dark';
+        const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+        const textColor = isDark ? '#94a3b8' : '#64748b';
+        const countTooltip = { rtl: true, bodyFont: { family: 'Vazirmatn' }, titleFont: { family: 'Vazirmatn' }, callbacks: { label: ctx => `${ctx.dataset.label || ''}: ${ctx.formattedValue}` } };
+        const scalesOptions = { y: { beginAtZero: true, grid: { color: gridColor }, ticks: { precision: 0, color: textColor } }, x: { grid: { display: false, color: gridColor }, ticks: { color: textColor, autoSkip: false, maxRotation: 45, minRotation: 0 } } };
+        
+        const doughnutOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: countTooltip } };
+
+        chartInstances.overall = new Chart('overallComplianceChart', { type: 'doughnut', data: { datasets: [{ data: [0, 0, 1], backgroundColor: ['#3b82f6', '#f59e0b', '#ef4444'], borderWidth: 0, cutout: '80%' }] }, options: doughnutOptions });
+        chartInstances.dashboardProgress = new Chart('dashboardOverallProgressChart', { type: 'doughnut', data: { labels: ['ارزیابی شده', 'باقی‌مانده'], datasets: [{ data: [0, 1], backgroundColor: ['#22c55e', isDark ? '#334155' : '#e2e8f0'], borderWidth: 0, cutout: '80%' }] }, options: doughnutOptions });
+        
+        ['A5', 'A6', 'A7', 'A8'].forEach(annex => {
+            chartInstances[`annex${annex}`] = new Chart(`annex${annex}Chart`, {
+                type: 'doughnut',
+                data: { labels: ['کامل', 'جزئی', 'نامنطبق'], datasets: [{ data: [0, 0, 1], backgroundColor: ['#3b82f6', '#f59e0b', '#ef4444'], borderWidth: 0, cutout: '80%' }] },
+                options: doughnutOptions
+            });
+        });
+
+        chartInstances.byType = new Chart('complianceByTypeChart', { type: 'bar', data: { labels: ['کنترل‌های Annex A', 'الزامات اجباری'], datasets: [{ label: 'تعداد انطباق کامل', data: [0, 0], backgroundColor: '#3b82f6', borderRadius: 5, barPercentage: 0.5 }] }, options: { responsive: true, maintainAspectRatio: false, scales: scalesOptions, plugins: { legend: { display: false }, tooltip: countTooltip } } });
+        chartInstances.byStatus = new Chart('complianceByStatusChart', { type: 'bar', data: { labels: ['کاملاً منطبق', 'تا حدی منطبق', 'منطبق نیست', 'مربوط نیست'], datasets: [{ label: 'تعداد الزامات', data: [0, 0, 0, 0], backgroundColor: ['#3b82f6', '#f59e0b', '#ef4444', '#64748b'], borderRadius: 5, barPercentage: 0.5 }] }, options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', scales: { x:{...scalesOptions.y}, y:{...scalesOptions.x} }, plugins: { legend: { display: false }, tooltip: countTooltip } } });
+        chartInstances.bySection = new Chart('complianceBySectionChart', { type: 'bar', data: { labels: [], datasets: [{ label: 'تعداد انطباق کامل', data: [], backgroundColor: '#3b82f6', borderRadius: 5 }] }, options: { responsive: true, maintainAspectRatio: false, scales: scalesOptions, plugins: { legend: { display: false }, tooltip: countTooltip } } });
+    }
+
+    function updateSectionProgress(target) {
+        const sections = getSectionsByTarget(target);
+        if (!sections.length) return;
+        let sectionTotalControls = 0, sectionAssessedControls = 0;
+        sections.forEach(section => {
+            const controls = section.controls || [].concat(...(section.subCategories || []).map(sc => sc.controls));
+            sectionTotalControls += controls.length;
+            sectionAssessedControls += controls.filter(c => c.status !== 'not_assessed').length;
+        });
+        const sectionProgress = sectionTotalControls > 0 ? (sectionAssessedControls / sectionTotalControls) * 100 : 0;
+        document.getElementById('section-progress-bar').style.width = `${sectionProgress}%`;
+        document.getElementById('section-progress-text').textContent = `${sectionAssessedControls} از ${sectionTotalControls} کنترل در این بخش ارزیابی شده است (${Math.round(sectionProgress)}%)`;
+    }
+
+    function runAllUpdates() {
+        let overallCounts = { fully_compliant: 0, partially_compliant: 0, not_compliant: 0, not_applicable: 0, not_assessed: 0 };
+        let byTypeCounts = { annexA: { fully: 0 }, mandatory: { fully: 0 } };
+        let bySectionCounts = {};
+        let byDomainCounts = { 'annex-a5': { fully_compliant: 0, partially_compliant: 0, not_compliant: 0 }, 'annex-a6': { fully_compliant: 0, partially_compliant: 0, not_compliant: 0 }, 'annex-a7': { fully_compliant: 0, partially_compliant: 0, not_compliant: 0 }, 'annex-a8': { fully_compliant: 0, partially_compliant: 0, not_compliant: 0 } };
+        let totalControls = 0;
+
+        assessmentData.forEach(section => {
+            let sectionFullyCount = 0;
+            const controls = section.controls || [].concat(...(section.subCategories || []).map(sc => sc.controls));
+            controls.forEach(control => {
+                totalControls++;
+                overallCounts[control.status]++;
+                if(byDomainCounts[section.id] && control.status !== 'not_assessed' && control.status !== 'not_applicable') {
+                    byDomainCounts[section.id][control.status]++;
+                }
+                if (control.status === 'fully_compliant') {
+                   byTypeCounts[section.type].fully++;
+                   sectionFullyCount++;
+                }
+            });
+            bySectionCounts[section.title] = sectionFullyCount;
+        });
+
+        const assessedOverall = totalControls - overallCounts.not_assessed;
+        const overallProgress = totalControls > 0 ? (assessedOverall / totalControls) * 100 : 0;
+        document.getElementById('overall-progress-bar').style.width = `${overallProgress}%`;
+        document.getElementById('overall-progress-text').textContent = `${assessedOverall} از ${totalControls} کنترل ارزیابی شده است (${Math.round(overallProgress)}%)`;
+        const activeTabId = document.querySelector('.tab-button.active')?.dataset.tabTarget;
+        if (activeTabId && activeTabId !== 'dashboard') updateSectionProgress(activeTabId);
+
+        Object.keys(byDomainCounts).forEach(domainId => {
+            const counts = byDomainCounts[domainId];
+            const chartKey = 'annex' + domainId.split('-')[1].toUpperCase();
+            const chart = chartInstances[chartKey];
+            const textEl = document.getElementById(`${chartKey}Text`);
+            if (chart && textEl) {
+                const assessable = counts.fully_compliant + counts.partially_compliant + counts.not_compliant;
+                const percentage = assessable > 0 ? Math.round((counts.fully_compliant / assessable) * 100) : 0;
+                textEl.textContent = `${percentage}%`;
+                chart.data.datasets[0].data = [counts.fully_compliant, counts.partially_compliant, counts.not_compliant];
+                if(assessable === 0) chart.data.datasets[0].data = [0,0,1];
+            }
+        });
+
+        const assessableForDoughnut = overallCounts.fully_compliant + overallCounts.partially_compliant + overallCounts.not_compliant;
+        const overallPercentage = assessableForDoughnut > 0 ? Math.round((overallCounts.fully_compliant / assessableForDoughnut) * 100) : 0;
+        document.getElementById('overallComplianceText').innerText = `${overallPercentage}%`;
+        chartInstances.overall.data.datasets[0].data = [overallCounts.fully_compliant, overallCounts.partially_compliant, overallCounts.not_compliant];
+        if (assessableForDoughnut === 0) chartInstances.overall.data.datasets[0].data = [0, 0, 1];
+        
+        const remainingOverall = totalControls - assessedOverall;
+        chartInstances.dashboardProgress.data.datasets[0].data = [assessedOverall, remainingOverall];
+        document.getElementById('dashboardOverallProgressText').innerText = `${Math.round(overallProgress)}%`;
+        
+        chartInstances.byType.data.datasets[0].data = [byTypeCounts.annexA.fully, byTypeCounts.mandatory.fully];
+        chartInstances.byStatus.data.datasets[0].data = [overallCounts.fully_compliant, overallCounts.partially_compliant, overallCounts.not_compliant, overallCounts.not_applicable];
+        chartInstances.bySection.data.labels = Object.keys(bySectionCounts);
+        chartInstances.bySection.data.datasets[0].data = Object.values(bySectionCounts);
+        
+        Object.values(chartInstances).forEach(c => c.update());
+    }
+
+    // --- INITIALIZATION ---
+    loadState();
+    initializeCharts();
+    applyTheme(currentTheme, false);
+    updateHeader(document.querySelector('.tab-button.active').dataset.tabTarget);
+    runAllUpdates();
+};
+</script>
+
+</body>
+</html>
